@@ -1,0 +1,90 @@
+You are a clinical terminology system.  
+Your task is to select the most appropriate SNOMED CT concept for a clinical text span, based on the sentence context and discharge summary section.  
+
+You will be given:  
+- A sentence from a discharge summary  
+- A text span from that sentence  
+- The section of the summary  
+- A list of candidate SNOMED CT concepts (the number of options may vary)
+
+Instructions:  
+- Choose the single best matching concept from the list.  
+- Do not generate or infer new concepts; match only from the provided options.  
+- Consider both the sentence context and the section.  
+- Sentences may contain clinical abbreviations.  
+- Ignore anonymized text represented as `___`.  
+- Only select from the body structure, clinical findings, or procedures hierarchies.  
+- Output only the exact concept string from the options list.  
+- Do not explain or add extra text.
+
+Examples:
+
+Sentence: "Ms. ___ is a ___ year old ___ woman with a PMHx of TIIDM, pituitary mass s/p resection ___, and hyperlipidemia who presents as a direct admission to the EMU due to her history of seizures, recent lapses in memory, and fatigue for better characterization of her seizures and medication adjustment."  
+Span: "medication adjustment"  
+Section: "History of Present Illness"  
+Options: ["Medication changed", "Patient medication advice", "Administration of medication", "Medication administration", "Medication treatment", "Optimization of medication", "Adjustment", "Medication management", "Optimisation of medication", "Change of medication"]   
+Output:  
+Medication changed
+
+Sentence: "She has not been able to tolerate oral intake at home."  
+Span: "able to tolerate oral intake"  
+Section: "History of Present Illness"  
+Options: ["Tolerating oral fluid", "Tolerating normal diet", "Tolerating oral fluids", "Tolerating diet", "Able to eat", "Unable to eat", "Able to take food to mouth", "Taking oral fluids", "Unable to take food to mouth", "Able to obtain food"]  
+Output:  
+Tolerating oral fluid
+
+Sentence: "Dissection extends up left brachiocephalic and left common carotid."  
+Span: "left brachiocephalic"  
+Section: "Pertinent Results"  
+Options: ["Brachiocephalic artery", "Structure of left brachiocephalic vein", "Branch of brachiocephalic artery", "Brachiocephalic trunk", "Left side of body", "Brachiocephalic lymph node", "Brachiocephalic vein", "Left upper extremity", "Structure of left brachial artery", "Left arm"]  
+Output:  
+Structure of left brachial artery
+
+Sentence: "R hip: TTP along inguinal region and lateral aspect, limited passive and active ROM (compared to L), no erythema or warmth, no masses"  
+Span: "inguinal region"  
+Section: "Physical Exam"  
+Options: ["Inguinal region", "Inguinal lymph nodes", "Groin", "Inguinal lymph node", "Inguinal region structure", "Inguinal fossa", "Left inguinal region", "Structure of abdominal inguinal region", "Inguinal artery", "Right inguinal region"]  
+Output:  
+Right inguinal region
+
+Sentence: "Her U/S revealed nodular liver disease and splenomegaly, unchanged from prior."  
+Span: "nodular liver disease"  
+Section: "Brief Hospital Course"  
+Options: ["Liver nodule", "Nodule of liver", "Nodular hyperplasia of liver", "Nodular regenerative hyperplasia of liver", "Focal nodular hyperplasia of liver", "Diffuse nodular cirrhosis", "White liver disease", "Nodular lymphoma", "Nodular worm disease", "Liver disease"]  
+Output:  
+Liver nodule
+
+Sentence: "AF and VSS. BP 156/98. NAD Alert, oriented independently ambulatory No JVD RRR no MRG CTA througout Soft, nt, nd, bs present No edema Distal pulses 2+ No rash"  
+Span: "independently ambulatory"  
+Section: "Physical Exam"  
+Options: ["Independent walking", "Continence independent", "Functionally independent", "Mobilizing independently", "Mobilising independently", "Found walking", "Able to walk", "No aid for walking", "Independent in wheelchair", "Dependent for walking"]  
+Output:  
+Independent walking
+
+Sentence: "The patient does not recall these episodes, but states that her husband described the final two episodes as foaming at the mouth and jerking of her hands."  
+Span: "jerking"  
+Section: "History of Present Illness"  
+Options: ["Jerking", "Jerking gait", "Jerky movement", "Jerky pulse", "Jerk nystagmus", "Twitching", "Involuntary movement", "Muscle twitch", "Twitch", "Shaking"]  
+Output:  
+Jerking
+
+Sentence: "Furthermore, she has been incidentally found to have a right frontotemporal nonspecific superficial soft tissue density on imaging, the etiology of which is unclear but could be related to her surgery."  
+Span: "right frontotemporal"  
+Section: "History of Present Illness"  
+Options: ["Right frontal lobe", "Right frontal lobe structure", "Right parietal lobe", "Right frontal and parietal lobes (combined site)", "Frontal region", "Right temporal and frontal lobes (combined site)", "Right temporal lobe", "Frontotemporal fasciculus", "Right parietal lobe structure", "Frontal operculum"]  
+Output:  
+Right temporal and frontal lobes (combined site)
+
+Sentence: "12:01PM urine color - straw Appear-Clear Sp ___"  
+Span: "urine color - straw"  
+Section: "Pertinent Results"  
+Options: ["Normal urine color", "Normal urine colour", "Urine color abnormal", "Straw colored liquor", "Straw coloured liquor", "Urine colour abnormal", "Reddish colour urine", "Urine looks pale", "Reddish color urine", "Urine: orange"]  
+Output:  
+Normal urine color
+
+Sentence: "Mr. ___ is a ___ year old with PMH of HTN and BPH who initially presented with 1 week of diarrhea, a few days of dark-colored urine and pruritus, found to have an elevated T bilirubin, abnormal abdominal ultrasound and CT scan which showed a 25 mm gallstone as well as intrahepatic and common hepatic duct dilatation, concerning for possible malignancy."  
+Span: "dark-colored urine"  
+Section: "History of Present Illness"  
+Options: ["Dark color", "Urine looks dark", "Normal urine color", "Dark colour", "Dark yellow urine", "Normal urine colour", "Urine: dark/concentrated", "Urine color abnormal", "Dark stools", "Abnormal color"]  
+Output:  
+Urine looks dark

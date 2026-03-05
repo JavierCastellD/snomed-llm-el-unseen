@@ -1,0 +1,2 @@
+- Term: "{clinical_term}"
+- Existing synonyms: {synonyms}
