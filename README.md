@@ -5,7 +5,7 @@ This repository contains our approach to perform medical entity linking, focusin
 2. Cross-encoder candidate reranking.
 3. LLM-based candidate selection.
 
-![ADD IMAGE HERE]()
+![Pipeline of our approach](images/pipelineDiagram.svg)
 
 ## Train bi-encoder and cross-encoder from the article
 
