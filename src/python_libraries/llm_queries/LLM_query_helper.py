@@ -2,10 +2,12 @@ from abc import ABC, abstractmethod
 import hashlib
 import json
 import os
-import textwrap
+
+# Base directory where this file is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_prompt(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as f:
+    with open(os.path.join(BASE_DIR, path), "r", encoding="utf-8") as f:
         return f.read()
 
 def get_hash(*values : str):
@@ -22,21 +24,21 @@ def get_hash(*values : str):
     return hashlib.md5(combined_string.encode('utf-8')).hexdigest()
 
 # PROMPT FILES
-ENTITY_LINKING_SYS_ES = "./prompts/system/entity_linking_es.txt"
-ENTITY_LINKING_USER_ES = "./prompts/user/entity_linking_es.txt"
-ENTITY_LINKING_SYS_EN = "./prompts/system/entity_linking_en.txt"
-ENTITY_LINKING_USER_EN = "./prompts/user/entity_linking_en.txt"
+ENTITY_LINKING_SYS_ES = "prompts/system/entity_linking_es.txt"
+ENTITY_LINKING_USER_ES = "prompts/user/entity_linking_es.txt"
+ENTITY_LINKING_SYS_EN = "prompts/system/entity_linking_en.txt"
+ENTITY_LINKING_USER_EN = "prompts/user/entity_linking_en.txt"
 
-ABBREVIATION_DISAMBIGUATION_SYS_ES = "./prompts/system/abbreviation_disambiguation_es.txt"
-ABBREVIATION_DISAMBIGUATION_USER_ES = "./prompts/user/abbreviation_disambiguation_es.txt"
-ABBREVIATION_DISAMBIGUATION_SYS_EN = "./prompts/system/abbreviation_disambiguation_en.txt"
-ABBREVIATION_DISAMBIGUATION_USER_EN = "./prompts/user/abbreviation_disambiguation_en.txt"
+ABBREVIATION_DISAMBIGUATION_SYS_ES = "prompts/system/abbreviation_disambiguation_es.txt"
+ABBREVIATION_DISAMBIGUATION_USER_ES = "prompts/user/abbreviation_disambiguation_es.txt"
+ABBREVIATION_DISAMBIGUATION_SYS_EN = "prompts/system/abbreviation_disambiguation_en.txt"
+ABBREVIATION_DISAMBIGUATION_USER_EN = "prompts/user/abbreviation_disambiguation_en.txt"
 
-REPHRASING_SYS_EN = "./prompts/system/rephrasing_en.txt"
-REPHRASING_USER_EN = "./prompts/user/rephrasing_en.txt"
+REPHRASING_SYS_EN = "prompts/system/rephrasing_en.txt"
+REPHRASING_USER_EN = "prompts/user/rephrasing_en.txt"
 
-SYNONYMS_SYS_EN = "./prompts/system/synonyms_en.txt"
-SYNONYMS_USER_EN = "./prompts/user/synonyms_en.txt"
+SYNONYMS_SYS_EN = "prompts/system/synonyms_en.txt"
+SYNONYMS_USER_EN = "prompts/user/synonyms_en.txt"
 
 class LLMQueryHelper(ABC):
     """Abstract class that defines a wrapper to simplify performing queries to Microsoft's Azure OpenAI for using LLMs.
