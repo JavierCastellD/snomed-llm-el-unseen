@@ -15,14 +15,7 @@ Instrucciones:
 - Algunos conceptos pueden tener el mismo nombre pero diferir por su tipo semántico indicado entre paréntesis (por ejemplo, “lesión (trastorno)” vs “lesión (anomalía morfológica)”). Usa el contexto para elegir el más adecuado.
 - Devuelve solo la cadena exacta del concepto seleccionado, sin explicación ni texto adicional. 
 
-Ejemplos:
-            
-Frase: "En el estudio radiológico, no se observaron particularidades en la zona de la lesión."  
-Fragmento: "lesión"  
-Opciones: ["lesión (anomalía morfológica)", "lesión (trastorno)", "lesión cerebral", "lesión mínima"]  
-Salida:  
-lesión (trastorno)
-
+Ejemplo:
 Frase: "Se trata de una mujer de 50 años fumadora ocasional."  
 Fragmento: "fumadora ocasional"  
 Opciones: ["fumador ocasional de cigarrillos (menos de un cigarrillo/día)", "fumador ocasional de tabaco", "fumador", "ex fumador"]  
