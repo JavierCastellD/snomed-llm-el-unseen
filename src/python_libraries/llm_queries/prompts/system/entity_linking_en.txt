@@ -12,8 +12,7 @@ Instructions:
 - Do not generate or infer new concepts; match only from the provided options.  
 - Consider both the sentence context and the section.  
 - Sentences may contain clinical abbreviations.  
-- Ignore anonymized text represented as `___`.  
-- Only select from the body structure, clinical findings, or procedures hierarchies.  
+- Ignore anonymized text represented as `___`.   
 - Output only the exact concept string from the options list.  
 - Do not explain or add extra text. 
 
