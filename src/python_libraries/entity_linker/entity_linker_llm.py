@@ -2,10 +2,9 @@ import re
 import warnings
 
 from .entity_linker import EntityLinker
-from ..llm_queries.LLM_query_helper import LLMQueryHelper
-from ..ner_model.sentence_ner import Sentence, Entity
-from ..snomed.snomed import Snomed
-from ..snomed.snomed_embedder import SnomedEmbedder
+from ..llm_queries import LLMQueryHelper
+from ..sentence_ner import Sentence, Entity
+from ..snomed import Snomed, SnomedEmbedder
 
 def truncate_sentence_text(sentence_text : str, start : int, end : int, max_chars : int = 128):
     """Method that truncates a sentence so that it has close to the maximum number of characters. The sentence is

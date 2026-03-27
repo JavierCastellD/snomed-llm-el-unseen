@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from ..ner_model.sentence_ner import Sentence
+from ..sentence_ner import Sentence
 
 class EntityLinker(ABC):
     """Abstract class that represents the entity linking pipeline. Each subclass is expected to provide functionality to link the entities found in a Sentence to their corresponding concept."""

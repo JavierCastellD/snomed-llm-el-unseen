@@ -1,8 +1,7 @@
 from .entity_linker_llm import EntityLinkerLLM
-from ..llm_queries.LLM_query_helper import LLMQueryHelper
-from ..ner_model.sentence_ner import Entity
-from ..snomed.snomed import Snomed
-from ..snomed.snomed_embedder import SnomedEmbedder
+from ..llm_queries import LLMQueryHelper
+from ..sentence_ner import Entity
+from ..snomed import Snomed, SnomedEmbedder
 
 class EntityLinkerLLMSemantic(EntityLinkerLLM):
     """Entity Linker LLM subclass that uses the semantic type or hierarchy to help when searching for similar concepts.

@@ -1,10 +1,9 @@
 from .entity_linker_llm_semantic import EntityLinkerLLMSemantic
 from .entity_linker_reranker_llm import EntityLinkerRerankerLLM
-from ..llm_queries.LLM_query_helper import LLMQueryHelper
-from ..ner_model.sentence_ner import Entity
+from ..llm_queries import LLMQueryHelper
+from ..sentence_ner import Entity
 from ..reranker import Reranker
-from ..snomed.snomed import Snomed
-from ..snomed.snomed_embedder import SnomedEmbedder
+from ..snomed import Snomed, SnomedEmbedder
 
 class EntityLinkerRerankerLLMSemantic(EntityLinkerRerankerLLM, EntityLinkerLLMSemantic):
     """Entity Linker subclass that uses LLMs and embeddings to link entities to the corresponding concepts and a Reranker to order the potential candidates. 

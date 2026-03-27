@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 from .annotated_dataset import AnnotatedDataset
-from ..ner_model.sentence_ner import Sentence, Entity
+from ..sentence_ner import Sentence, Entity
 
 SECTIONS = ["Name", "Unit No", "Admission Date", "Discharge Date", "Date of Birth", "Sex", "Service", 
             "Allergies", "Attending", "Chief Complaint", "Major Surgical or Invasive Procedure", "History of Present Illness",
