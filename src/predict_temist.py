@@ -14,7 +14,7 @@ from python_libraries.annotated_datasets.TEMIST_dataset import TEMIST_dataset
 from python_libraries.llm_queries.LLM_query_helper_openai import LLMQueryHelperOpenAI
 from python_libraries.reranker import Reranker
 from python_libraries.snomed import Snomed, SnomedEmbedder, SnomedPipe
-from python_libraries.utils import load_config, annotations_to_df, concatenate_annotations
+from python_libraries.utils import load_config, annotations_to_df, concatenate_annotations, load_model_paths_es
 
 # RUN CONFIGURATION
 config_run_file = sys.argv[1]
@@ -73,37 +73,11 @@ RELATIONS_PATH = f"snomed_data/relationshipInternational_{SNOMED_VERSION}.txt"
 DESCRIPTIONS_PATH = f"snomed_data/descriptionSpanish_{SNOMED_VERSION}.txt" 
 
 # Embedding files
-if embedding_type == "sapbert":
-    EMBEDDING_MODEL_PATH = "cambridgeltl/SapBERT-from-PubMedBERT-fulltext-mean-token" 
-    EMBEDDING_DICTIONARY_PATH = f"snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict_{dataset}.npz" #"snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict.json" #"snomed_dictionaries/desc_ent_all_sapbert_mean_base_rephrasings_sct_dict.json" 
-
-    CROSS_ENCODER = f"cross-encoder/ce_50_{dataset}_sapbert"
-    ID2NAME = f"snomed_dictionaries/id2name_desc_ent_sct_dict_{dataset}.json"
-elif embedding_type == "sapbert_esp":
-    EMBEDDING_MODEL_PATH = "BSC-NLP4BIA/SapBERT-from-roberta-base-biomedical-clinical-es"
-    EMBEDDING_DICTIONARY_PATH = f"snomed_dictionaries/desc_ent_all_sapbert_roberta_es_sct_dict_{dataset}.npz"
-    
-    CROSS_ENCODER = f"cross-encoder/ce_50_{dataset}_sapbert_spanish"
-    ID2NAME = f"snomed_dictionaries/id2name_desc_ent_sapbert_roberta_es_sct_dict_{dataset}.json"
-elif embedding_type == "roberta":
-    EMBEDDING_MODEL_PATH = "PlanTL-GOB-ES/roberta-base-biomedical-clinical-es"
-    EMBEDDING_DICTIONARY_PATH = f"snomed_dictionaries/desc_ent_all_roberta_base_es_sct_dict_{dataset}.npz"
-    
-    CROSS_ENCODER = f"cross-encoder/ce_50_{dataset}_roberta"
-    ID2NAME = f"snomed_dictionaries/id2name_desc_ent_roberta_base_es_sct_dict_{dataset}.json"
-elif embedding_type == "sapbert_pubmed_es":
-    EMBEDDING_MODEL_PATH = f"sentence_bert_models/sapbert_pubmed_{triplet_type}_es"
-    EMBEDDING_DICTIONARY_PATH = f"snomed_dictionaries/desc_ent_all_sapbert_pubmed_{triplet_type}_es_sct_dict_{dataset}.npz"
-    
-    CROSS_ENCODER = f"cross-encoder/cef_sapbert_pubmed_{triplet_type}_es_{dataset}_sim_cand_200_epoch_1_bs_128"
-    ID2NAME = f"snomed_dictionaries/id2name_desc_ent_sapbert_pubmed_{triplet_type}_es_sct_dict_{dataset}.json"
-elif embedding_type == "sapbert_roberta_es":
-    EMBEDDING_MODEL_PATH = f"sentence_bert_models/sapbert_roberta_{triplet_type}_es"
-    EMBEDDING_DICTIONARY_PATH = f"snomed_dictionaries/desc_ent_all_sapbert_roberta_{triplet_type}_es_sct_dict_{dataset}.npz"
-    
-    #CROSS_ENCODER = f"cross-encoder/ce_50_{dataset}_sapbert_roberta_{triplet_type}_es" -> This is to use the version of CE mine
-    CROSS_ENCODER = f"cross-encoder/cef_sapbert_roberta_{triplet_type}_es_{dataset}_sim_cand_200_epoch_1_bs_128"
-    ID2NAME = f"snomed_dictionaries/id2name_desc_ent_sapbert_roberta_{triplet_type}_es_sct_dict_{dataset}.json"
+embedding_files = load_model_paths_es(embedding_type=embedding_type, triplet_type=triplet_type, dataset=dataset)
+EMBEDDING_MODEL_PATH = embedding_files['emb_model_path']
+EMBEDDING_DICTIONARY_PATH = embedding_files['emb_dic_path']
+CROSS_ENCODER = embedding_files['cross_encoder_path']
+ID2NAME = embedding_files['id2name_path']
 
 DICTIONARY_DESCRIPTIONS = True
 
