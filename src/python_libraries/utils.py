@@ -81,11 +81,11 @@ def load_temist_files(dataset : str = "distemist", base_path : str = "..", use_t
 
     return train_set, test_set, gaz
 
-def concatenate_annotations(folder_path : str, file_base_name : str):
+def concatenate_annotations(folder_path : str):
     """Loads all the checkpoints and concatenates them into a single DataFrame."""
     dfs = []
-    for file_path in os.listdir(f"{folder_path}{file_base_name}"):
-        df_new = pd.read_csv(f"{folder_path}{file_base_name}/{file_path}")
+    for file_path in os.listdir(f"{folder_path}"):
+        df_new = pd.read_csv(f"{folder_path}/{file_path}")
         dfs.append(df_new)
 
     concatenated = pd.concat(dfs, ignore_index=True)

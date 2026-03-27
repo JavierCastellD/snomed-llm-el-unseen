@@ -201,7 +201,7 @@ for note_id in temist.get_note_ids():#tqdm(temist.get_note_ids()):
         saved_notes += 1
 
 # Save the predictions to a single csv
-concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH, file_base_name=EXECUTION_NAME)
+concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH)
 concatenated_df.to_csv(EXECUTION_NAME + '_predictions.csv', index=False)
 
 llm_query_helper.save_cache()

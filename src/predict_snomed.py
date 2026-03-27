@@ -179,7 +179,7 @@ for note_id in tqdm(test_df['note_id']):
         df.to_csv(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv')
 
 # Save the predictions to a single csv
-concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH, file_base_name=EXECUTION_NAME)
+concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH)
 
 # Fix wrong start, end - do not know why
 diff_mask_start = (concatenated_df[['start']] != test_df[['start']]).any(axis=1)
