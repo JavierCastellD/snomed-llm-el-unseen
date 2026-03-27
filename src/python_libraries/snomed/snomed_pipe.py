@@ -2,7 +2,7 @@ import warnings
 
 from ..entity_linker.entity_linker import EntityLinker
 from ..annotated_datasets.annotated_dataset import remap_annotations
-from ..ner_model.sentence_ner import Sentence
+from ..sentence_ner import Sentence
 
 def postprocess_sentences(original_text : str, sentences : list[Sentence], remap_annotations_to_original : bool = True) -> list[dict]:
     """Function used to extract the entities from the Sentence list and fix the start and end

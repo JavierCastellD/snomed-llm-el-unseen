@@ -3,7 +3,7 @@ import re
 import warnings
 
 from .annotated_dataset import AnnotatedDataset
-from ..ner_model.sentence_ner import Sentence, Entity
+from ..sentence_ner import Sentence, Entity
 
 # distemist  = filename mark    label	off0	    off1	    span	code	semantic_rel
 # symptemist = filename	        label	span_ini	span_end	text	code	sem_rel	        is_abbrev	is_composite	need_context

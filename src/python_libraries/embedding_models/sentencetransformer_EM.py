@@ -1,5 +1,7 @@
 import warnings
+
 from sentence_transformers import SentenceTransformer
+
 from .embedding_model import EmbeddingModel
 
 class SentenceTransformerEM(EmbeddingModel):

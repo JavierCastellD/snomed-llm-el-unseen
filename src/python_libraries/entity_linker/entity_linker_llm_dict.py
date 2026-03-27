@@ -2,12 +2,11 @@ import re
 from typing import Any
 
 from .entity_linker_reranker_llm_semantic import EntityLinkerRerankerLLMSemantic
-from ..llm_queries.LLM_query_helper import LLMQueryHelper
+from ..llm_queries import LLMQueryHelper
 from ..annotated_datasets.MIMIC_IV_annotated_dataset import get_deanonymized_section_name
-from ..ner_model.sentence_ner import Sentence, Entity
+from ..sentence_ner import Sentence, Entity
 from ..reranker import Reranker
-from ..snomed.snomed import Snomed
-from ..snomed.snomed_embedder import SnomedEmbedder
+from ..snomed import Snomed, SnomedEmbedder
 
 TRAINING_BIAS = 0.05
 

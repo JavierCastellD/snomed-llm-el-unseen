@@ -2,7 +2,7 @@ import sys
 
 import pandas as pd
 
-from python_libraries.snomed.snomed import Snomed
+from python_libraries.snomed import Snomed
 from python_libraries.utils import load_temist_files, get_prediction_results
 
 # Load names

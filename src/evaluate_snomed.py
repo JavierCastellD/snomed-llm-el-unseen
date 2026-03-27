@@ -5,7 +5,7 @@ import pandas as pd
 import re
 
 from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC_IV_dataset
-from python_libraries.snomed.snomed import Snomed
+from python_libraries.snomed import Snomed
 from python_libraries.utils import load_mimic, get_prediction_results
 
 def static_preprocess(text):
