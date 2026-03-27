@@ -9,13 +9,11 @@ from sentence_transformers.cross_encoder import CrossEncoder
 
 from python_libraries.embedding_models.embedding_model import load_embeddings
 from python_libraries.embedding_models.sentencetransformer_EM import SentenceTransformerEM
-from python_libraries.entity_linker.entity_linker_llm_dict import EntityLinkerLLMDictionary
+from python_libraries.entity_linker import EntityLinkerLLMDictionary
 from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC_IV_dataset
-from python_libraries.llm_queries.LLM_query_helper_openai import LLMQueryHelperOpenAI
+from python_libraries.llm_queries import LLMQueryHelperOpenAI
 from python_libraries.reranker import Reranker
-from python_libraries.snomed.snomed import Snomed
-from python_libraries.snomed.snomed_embedder import SnomedEmbedder
-from python_libraries.snomed.snomed_pipe import SnomedPipe
+from python_libraries.snomed import Snomed, SnomedEmbedder, SnomedPipe
 from python_libraries.utils import load_config, annotations_to_df, concatenate_annotations
 
 # RUN CONFIGURATION
