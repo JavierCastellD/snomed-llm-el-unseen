@@ -8,6 +8,39 @@ from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC
 
 DF_HEADERS = ['note_id', 'start', 'end', 'concept_id']
 
+def load_model_paths_es(embedding_type : str, triplet_type : str, dataset : str):
+    """Loads the paths for the embedding model, the embedding dictionary, the cross-encoder, and the id2name dictionary, 
+    according to the given embedding type, triplet configuration, and dataset."""
+    embedding_info = {}
+    if embedding_type == "sapbert":
+        embedding_info['emb_model_path'] = "cambridgeltl/SapBERT-from-PubMedBERT-fulltext-mean-token" 
+        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict_{dataset}.npz"
+
+        embedding_info['cross_encoder_path'] = f"cross-encoder/ce_50_{dataset}_sapbert"
+        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_sct_dict_{dataset}.json"
+    elif embedding_type == "sapbert_esp":
+        embedding_info['emb_model_path'] = "BSC-NLP4BIA/SapBERT-from-roberta-base-biomedical-clinical-es"
+        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_sapbert_roberta_es_sct_dict_{dataset}.npz"
+        
+        embedding_info['cross_encoder_path'] = f"cross-encoder/ce_50_{dataset}_sapbert_spanish"
+        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_sapbert_roberta_es_sct_dict_{dataset}.json"
+    elif embedding_type == "roberta":
+        embedding_info['emb_model_path'] = "PlanTL-GOB-ES/roberta-base-biomedical-clinical-es"
+        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_roberta_base_es_sct_dict_{dataset}.npz"
+        
+        embedding_info['cross_encoder_path'] = f"cross-encoder/ce_50_{dataset}_roberta"
+        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_roberta_base_es_sct_dict_{dataset}.json"
+    elif embedding_type in ['sapbert', 'pubmed', 'sapbert_pubmed', 'sapbert_roberta']:
+        embedding_info['emb_model_path'] = f"sentence_bert_models/{embedding_type}_{triplet_type}_es"
+        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.npz"
+        
+        embedding_info['cross_encoder_path'] = f"cross-encoder/cef_{embedding_type}_{triplet_type}_es_{dataset}_sim_cand_200_epoch_1_bs_128"
+        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.json"
+    else:
+        raise ValueError(f"Embedding type {embedding_type} not recognized.")
+    
+    return embedding_info
+
 def load_mimic(path_to_mimic_data : str = ".."):
     notes_folder_path_train = f'{path_to_mimic_data}/mimic_data/mimic_notes/'
     annotations_csv_path_train = f'{path_to_mimic_data}/mimic_data/train_annotations.csv'
@@ -81,11 +114,11 @@ def load_temist_files(dataset : str = "distemist", base_path : str = "..", use_t
 
     return train_set, test_set, gaz
 
-def concatenate_annotations(folder_path : str, file_base_name : str):
+def concatenate_annotations(folder_path : str):
     """Loads all the checkpoints and concatenates them into a single DataFrame."""
     dfs = []
-    for file_path in os.listdir(f"{folder_path}{file_base_name}"):
-        df_new = pd.read_csv(f"{folder_path}{file_base_name}/{file_path}")
+    for file_path in os.listdir(f"{folder_path}"):
+        df_new = pd.read_csv(f"{folder_path}/{file_path}")
         dfs.append(df_new)
 
     concatenated = pd.concat(dfs, ignore_index=True)
