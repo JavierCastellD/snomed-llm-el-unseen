@@ -1,3 +1,4 @@
+import os
 import sys
 
 import json
@@ -7,6 +8,8 @@ import re
 from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC_IV_dataset
 from python_libraries.snomed import Snomed
 from python_libraries.utils import load_mimic, get_prediction_results
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def static_preprocess(text):
     t = text.lower()
@@ -28,8 +31,8 @@ predictions_path = sys.argv[1]
 mimic_train, mimic_test = load_mimic()
 
 # Load annotations
-df_train = pd.read_csv('mimic_data/train_annotations.csv')
-df_test = pd.read_csv('mimic_data/test_annotations.csv')
+df_train = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'train_annotations.csv'))
+df_test = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv'))
 
 # Add span column
 for df, mimic in [(df_train, mimic_train), (df_test, mimic_test)]:
@@ -51,10 +54,10 @@ codes_seen = set(df_train['concept_id'])
 mentions_seen = set(df_train['span'])
 
 # Load SNOMED names (gazetteer)
-with open('snomed_dictionaries/id2name_desc_ent_sct_dict.json') as f:
+with open(os.path.join(BASE_DIR, 'snomed_dictionaries', 'id2name_desc_ent_sct_dict.json')) as f:
     sct_names = json.load(f)
     sct_name_values = set(sct_names.values())
-
+    
 
 # Load the predictions
 predictions = pd.read_csv(predictions_path)
@@ -79,9 +82,10 @@ unseen_mentions = [mention for mention in df_test['span'] if mention not in ment
 unseen_codes = [code for code in df_test['concept_id'] if code not in codes_seen]
 
 # Load SNOMED
-CONCEPTS_PATH = './snomed_data/conceptInternational_20230531.txt'
-RELATIONS_PATH = './snomed_data/relationshipInternational_20230531.txt'
-DESCRIPTIONS_PATH = './snomed_data/descriptionInternational_20230531.txt'
+SNOMED_VERSION = "20230531"
+CONCEPTS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'conceptInternational_{SNOMED_VERSION}.txt')
+RELATIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'relationshipInternational_{SNOMED_VERSION}.txt')
+DESCRIPTIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'descriptionInternational_{SNOMED_VERSION}.txt')
 
 snomed = Snomed(CONCEPTS_PATH, RELATIONS_PATH, DESCRIPTIONS_PATH, add_inactive=False)
 

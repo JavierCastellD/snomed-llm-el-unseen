@@ -16,6 +16,8 @@ from python_libraries.reranker import Reranker
 from python_libraries.snomed import Snomed, SnomedEmbedder, SnomedPipe
 from python_libraries.utils import load_config, annotations_to_df, concatenate_annotations
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 # RUN CONFIGURATION
 config_run_file = sys.argv[1]
 model_name = sys.argv[2]
@@ -43,13 +45,13 @@ threshold = config_dic['threshold']
 dictionary_options = config_dic['dictionary_options']
 
 # Files for the checkpoints
-DIRECTORY_PATH = 'el_checkpoints/' + EXECUTION_NAME + '_checkpoints'
+DIRECTORY_PATH = os.path.join(BASE_DIR, 'el_checkpoints', EXECUTION_NAME + '_checkpoints')
 
 if not os.path.exists(DIRECTORY_PATH):
     os.makedirs(DIRECTORY_PATH)
 
 # LLM files
-CONFIG_FILE = "config.cfg"
+CONFIG_FILE = os.path.join(BASE_DIR, "src", "config_files", "config_llm.cfg")
 
 config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
@@ -60,15 +62,13 @@ API_KEY = config['AZURE']['apikey']
 
 # SNOMED CT files
 SNOMED_VERSION = "20230531"
-CONCEPTS_PATH = f"snomed_data/conceptInternational_{SNOMED_VERSION}.txt" 
-RELATIONS_PATH = f"snomed_data/relationshipInternational_{SNOMED_VERSION}.txt"
-DESCRIPTIONS_PATH = f"snomed_data/descriptionInternational_{SNOMED_VERSION}.txt" 
- 
+CONCEPTS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'conceptInternational_{SNOMED_VERSION}.txt')
+RELATIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'relationshipInternational_{SNOMED_VERSION}.txt')
+DESCRIPTIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'descriptionInternational_{SNOMED_VERSION}.txt')
+
 # Embedding files
-EMBEDDING_MODEL_PATH = f'sentence_bert_models/{model_name}_umls_{triplet_type}_en/'
-EMBEDDING_DICTIONARY_PATH = f'snomed_dictionaries/desc_ent_all_{model_name}_umls_{triplet_type}_en_sct_dict.npz' 
-#EMBEDDING_MODEL_PATH = "cambridgeltl/SapBERT-from-PubMedBERT-fulltext-mean-token" 
-#EMBEDDING_DICTIONARY_PATH = "snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict.npz" #"snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict.json" #"snomed_dictionaries/desc_ent_all_sapbert_mean_base_rephrasings_sct_dict.json" 
+EMBEDDING_MODEL_PATH = os.path.join(BASE_DIR, 'sentence_bert_models', f'{model_name}_{triplet_type}_en/')
+EMBEDDING_DICTIONARY_PATH = os.path.join(BASE_DIR, 'snomed_dictionaries', f'desc_ent_all_{model_name}_{triplet_type}_en_sct_dict.npz')
 DICTIONARY_DESCRIPTIONS = True
 
 # Load SNOMED
@@ -95,7 +95,7 @@ for cid_key in embedding_dictionary.keys():
         types_hierarchy[top_level_fsn][cid_key] = embedding_dictionary[cid_key]
 
 # Load the id2name
-with open(f"snomed_dictionaries/id2name_desc_ent_{model_name}_umls_{triplet_type}_en_sct_dict.json", "r") as id2name_file:
+with open(os.path.join(BASE_DIR, 'snomed_dictionaries', f'id2name_desc_ent_{model_name}_{triplet_type}_en_sct_dict.json'), "r") as id2name_file:
     id2name = json.load(id2name_file)
     
 # Load SnomedEmbedder
@@ -106,8 +106,7 @@ snomed_embedder = SnomedEmbedder(snomed=snomed, embedding_model=embedding_model,
 llm_query_helper = LLMQueryHelperOpenAI(API_KEY, ENDPOINT, model_name='gpt-5-mini', temperature=1)
 
 # Load the CrossEncoder
-#cross_encoder = CrossEncoder("cross-encoder/ce_abv_50_all_train")
-cross_encoder = CrossEncoder(f"cross-encoder/cef_{model_name}_umls_{triplet_type}_en_snomed_sim_cand_200_epoch_1_bs_128")
+cross_encoder = CrossEncoder(os.path.join(BASE_DIR, 'cross-encoder', f'cef_{model_name}_{triplet_type}_en_snomed_sim_cand_200_epoch_1_bs_128'))
 
 # Create the Reranker
 reranker = Reranker(cross_encoder)
@@ -121,11 +120,11 @@ ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Procedure' : 'Procedure'}
 
 # Load the text files
-NOTES_FOLDER_PATH = 'mimic_data/mimic_notes_test/'
-TRAIN_NOTES_PATH = 'mimic_notes_split/train_note_ids.txt'
-TEST_NOTES_PATH = 'mimic_notes_split/test_note_ids.txt'
-ANNOTATIONS_CSV_PATH = 'mimic_data/test_annotations.csv'
-ANNOTATIONS_TRAIN_CSV_PATH = 'mimic_data/train_annotations.csv'
+NOTES_FOLDER_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic_notes_test/')
+TRAIN_NOTES_PATH = os.path.join(BASE_DIR, 'mimic_notes_split', 'train_note_ids.txt')
+TEST_NOTES_PATH = os.path.join(BASE_DIR, 'mimic_notes_split', 'test_note_ids.txt')
+ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv')
+ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'train_annotations.csv')
 
 # Load the notes and annotations
 mimic = MIMIC_IV_dataset(NOTES_FOLDER_PATH, ANNOTATIONS_CSV_PATH)
@@ -150,7 +149,7 @@ entity_linker = EntityLinkerLLMDictionary(snomed=snomed, snomed_embedder=snomed_
 snomed_pipe = SnomedPipe(entity_linker)
 
 # Load the IDs of train notes
-test_df = pd.read_csv('mimic_data/mimic-iv_notes_test_set.csv')
+test_df = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'mimic-iv_notes_test_set.csv'))
 
 # Iterate through texts
 for note_id in tqdm(test_df['note_id']):
@@ -165,8 +164,8 @@ for note_id in tqdm(test_df['note_id']):
     sentences = mimic.get_annotated_sentences_from_note(note_id=note_id, transform=True, adapt_annotation_index=True)
 
     # Obtain the predicted entities
-    if os.path.exists(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv'):
-        predicted_entities = pd.read_csv(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv')
+    if os.path.exists(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv')):
+        predicted_entities = pd.read_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv'))
         
     else:
         for sentence in sentences:
@@ -176,7 +175,7 @@ for note_id in tqdm(test_df['note_id']):
                     
         predicted_entities = snomed_pipe.link_entities_given_spans(text, sentences)
         df = annotations_to_df(note_id, predicted_entities, {'label' : 'concept_id', 'start' : 'start', 'end' : 'end'},  add_options=True, add_confidence=True, add_other=True)
-        df.to_csv(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv')
+        df.to_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv'), index=False)
 
 # Save the predictions to a single csv
 concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH)
@@ -187,6 +186,6 @@ concatenated_df.loc[diff_mask_start, 'start'] = test_df[diff_mask_start]['start'
 diff_mask_end = (concatenated_df[['end']] != test_df[['end']]).any(axis=1)
 concatenated_df.loc[diff_mask_end, 'end'] = test_df[diff_mask_end]['end']
 
-concatenated_df.to_csv(EXECUTION_NAME + '_predictions.csv', index=False)
+concatenated_df.to_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_predictions.csv'), index=False)
     
 llm_query_helper.save_cache()

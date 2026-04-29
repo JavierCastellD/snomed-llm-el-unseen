@@ -8,34 +8,34 @@ from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC
 
 DF_HEADERS = ['note_id', 'start', 'end', 'concept_id']
 
-def load_model_paths_es(embedding_type : str, triplet_type : str, dataset : str):
+def load_model_paths_es(embedding_type : str, triplet_type : str, dataset : str, base_path : str = "..") -> dict:
     """Loads the paths for the embedding model, the embedding dictionary, the cross-encoder, and the id2name dictionary, 
     according to the given embedding type, triplet configuration, and dataset."""
     embedding_info = {}
     if embedding_type == "sapbert":
         embedding_info['emb_model_path'] = "cambridgeltl/SapBERT-from-PubMedBERT-fulltext-mean-token" 
-        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict_{dataset}.npz"
+        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict_{dataset}.npz"
 
-        embedding_info['cross_encoder_path'] = f"cross-encoder/ce_50_{dataset}_sapbert"
-        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_sct_dict_{dataset}.json"
+        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/ce_50_{dataset}_sapbert"
+        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_sct_dict_{dataset}.json"
     elif embedding_type == "sapbert_esp":
         embedding_info['emb_model_path'] = "BSC-NLP4BIA/SapBERT-from-roberta-base-biomedical-clinical-es"
-        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_sapbert_roberta_es_sct_dict_{dataset}.npz"
+        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_sapbert_roberta_es_sct_dict_{dataset}.npz"
         
-        embedding_info['cross_encoder_path'] = f"cross-encoder/ce_50_{dataset}_sapbert_spanish"
-        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_sapbert_roberta_es_sct_dict_{dataset}.json"
+        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/ce_50_{dataset}_sapbert_spanish"
+        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_sapbert_roberta_es_sct_dict_{dataset}.json"
     elif embedding_type == "roberta":
         embedding_info['emb_model_path'] = "PlanTL-GOB-ES/roberta-base-biomedical-clinical-es"
-        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_roberta_base_es_sct_dict_{dataset}.npz"
+        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_roberta_base_es_sct_dict_{dataset}.npz"
         
-        embedding_info['cross_encoder_path'] = f"cross-encoder/ce_50_{dataset}_roberta"
-        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_roberta_base_es_sct_dict_{dataset}.json"
+        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/ce_50_{dataset}_roberta"
+        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_roberta_base_es_sct_dict_{dataset}.json"
     elif embedding_type in ['sapbert', 'pubmed', 'sapbert_pubmed', 'sapbert_roberta']:
-        embedding_info['emb_model_path'] = f"sentence_bert_models/{embedding_type}_{triplet_type}_es"
-        embedding_info['emb_dic_path'] = f"snomed_dictionaries/desc_ent_all_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.npz"
+        embedding_info['emb_model_path'] = f"{base_path}/sentence_bert_models/{embedding_type}_{triplet_type}_es"
+        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.npz"
         
-        embedding_info['cross_encoder_path'] = f"cross-encoder/cef_{embedding_type}_{triplet_type}_es_{dataset}_sim_cand_200_epoch_1_bs_128"
-        embedding_info['id2name_path'] = f"snomed_dictionaries/id2name_desc_ent_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.json"
+        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/cef_{embedding_type}_{triplet_type}_es_{dataset}_sim_cand_200_epoch_1_bs_128"
+        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.json"
     else:
         raise ValueError(f"Embedding type {embedding_type} not recognized.")
     
@@ -72,7 +72,7 @@ def load_temist_files(dataset : str = "distemist", base_path : str = "..", use_t
         TSV_TRAINING_FILE_1 = f"{folder_path}/training/subtrack2_linking/distemist_subtrack2_training1_linking.tsv"
         TSV_TRAINING_FILE_2 = f"{folder_path}/training/subtrack2_linking/distemist_subtrack2_training2_linking.tsv"
         TSV_TEST_FILE = f"{folder_path}/test_annotated/subtrack2_linking/distemist_subtrack2_test_linking.tsv"
-        GAZ_FILE = f"{folder_path}/distemist/dictionary_distemist.tsv"
+        GAZ_FILE = f"{folder_path}/dictionary_distemist.tsv"
 
         df1 = pd.read_csv(TSV_TRAINING_FILE_1, sep='\t')
         df2 = pd.read_csv(TSV_TRAINING_FILE_2, sep='\t')

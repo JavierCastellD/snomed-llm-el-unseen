@@ -16,6 +16,8 @@ from python_libraries.reranker import Reranker
 from python_libraries.snomed import Snomed, SnomedEmbedder, SnomedPipe
 from python_libraries.utils import load_config, annotations_to_df, concatenate_annotations, load_model_paths_es
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 # RUN CONFIGURATION
 config_run_file = sys.argv[1]
 dataset = sys.argv[2]
@@ -32,7 +34,7 @@ EXECUTION_NAME = config_dic['execution_name']
 PREFIX_EXECUTION_NAME = dataset + '_' + embedding_type
 if triplet_type is not None:
     PREFIX_EXECUTION_NAME += '_' + triplet_type
-EXECUTION_NAME = PREFIX_EXECUTION_NAME + '_' + EXECUTION_NAME #'_CE_mine_' + EXECUTION_NAME
+EXECUTION_NAME = PREFIX_EXECUTION_NAME + '_' + EXECUTION_NAME
 span_dictionary_path = config_dic['span_dictionary_path']
 
 disambiguate_abbreviations = config_dic['disambiguate_abbreviations']
@@ -52,13 +54,13 @@ threshold = config_dic['threshold']
 dictionary_options = config_dic['dictionary_options']
 
 # Files for the checkpoints
-DIRECTORY_PATH = 'el_checkpoints/' + EXECUTION_NAME + '_checkpoints'
+DIRECTORY_PATH = os.path.join(BASE_DIR, 'el_checkpoints', EXECUTION_NAME + '_checkpoints')
 
 if not os.path.exists(DIRECTORY_PATH):
     os.makedirs(DIRECTORY_PATH)
 
 # LLM files
-CONFIG_FILE = "config.cfg"
+CONFIG_FILE = os.path.join(BASE_DIR, 'src', 'config_files', 'config_llm.cfg')
 
 config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
@@ -68,12 +70,12 @@ API_KEY = config['AZURE']['apikey']
 
 # SNOMED CT files
 SNOMED_VERSION = "20221031" #"20230531"
-CONCEPTS_PATH = f"snomed_data/conceptInternational_{SNOMED_VERSION}.txt" 
-RELATIONS_PATH = f"snomed_data/relationshipInternational_{SNOMED_VERSION}.txt"
-DESCRIPTIONS_PATH = f"snomed_data/descriptionSpanish_{SNOMED_VERSION}.txt" 
+CONCEPTS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'conceptInternational_{SNOMED_VERSION}.txt')
+RELATIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'relationshipInternational_{SNOMED_VERSION}.txt')
+DESCRIPTIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'descriptionSpanish_{SNOMED_VERSION}.txt')
 
 # Embedding files
-embedding_files = load_model_paths_es(embedding_type=embedding_type, triplet_type=triplet_type, dataset=dataset)
+embedding_files = load_model_paths_es(embedding_type=embedding_type, triplet_type=triplet_type, dataset=dataset, base_path=BASE_DIR)
 EMBEDDING_MODEL_PATH = embedding_files['emb_model_path']
 EMBEDDING_DICTIONARY_PATH = embedding_files['emb_dic_path']
 CROSS_ENCODER = embedding_files['cross_encoder_path']
@@ -118,14 +120,14 @@ ner_type2hierarchy = {'Body structure' : 'Body structure',
 
 # Load the text files
 if dataset == "distemist":
-    NOTES_FOLDER_PATH = "el_datasets/distemist/test_annotated/text_files/"
-    ANNOTATIONS_TSV_PATH = "el_datasets/distemist/test_annotated/subtrack2_linking/distemist_subtrack2_test_linking.tsv"
+    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "el_datasets", "distemist", "test_annotated", "text_files")
+    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "el_datasets", "distemist", "test_annotated", "subtrack2_linking", "distemist_subtrack2_test_linking.tsv")
 elif dataset == "medprocner":
-    NOTES_FOLDER_PATH = "el_datasets/medprocner/medprocner_test/txt/"
-    ANNOTATIONS_TSV_PATH = "el_datasets/medprocner/medprocner_test/tsv/medprocner_tsv_test_subtask2.tsv"
+    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "el_datasets", "medprocner", "medprocner_test", "txt")
+    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "el_datasets", "medprocner", "medprocner_test", "tsv", "medprocner_tsv_test_subtask2.tsv")
 elif dataset == "symptemist":
-    NOTES_FOLDER_PATH = "el_datasets/distemist/test_annotated/text_files/"
-    ANNOTATIONS_TSV_PATH = "el_datasets/symptemist/symptemist_test/subtask2-linking/symptemist_tsv_test_subtask2.tsv"
+    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "el_datasets", "symptemist", "symptemist_test", "subtask2-linking", "symptemist_tsv_test_subtask2.tsv")
+    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "el_datasets", "symptemist", "symptemist_test", "subtask2-linking", "symptemist_tsv_test_subtask2.tsv")
 
 temist = TEMIST_dataset(notes_folder_path=NOTES_FOLDER_PATH, annotations_tsv_path=ANNOTATIONS_TSV_PATH, dataset_type=dataset,
                         ignore_combined=True, ignore_no_code=True)
@@ -154,8 +156,8 @@ for note_id in temist.get_note_ids():#tqdm(temist.get_note_ids()):
     sentences = temist.get_annotated_sentences_from_note(note_id=note_id, transform=True)
 
     # Obtain the predicted entities
-    if os.path.exists(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv'):
-        predicted_entities = pd.read_csv(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv')
+    if os.path.exists(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv')):
+        predicted_entities = pd.read_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv'))
         
     else:
         n_entities = 0
@@ -171,11 +173,11 @@ for note_id in temist.get_note_ids():#tqdm(temist.get_note_ids()):
             print(f'Unmatching number of entities between predicted {len(predicted_entities)} and gold {n_entities}')
         df = annotations_to_df(note_id, predicted_entities, {'label' : 'concept_id', 'start' : 'start', 'end' : 'end'},  add_options=True, add_confidence=True, add_other=True)
         print(f'Saving results for {note_id} {saved_notes}/{len(temist.get_note_ids())}')
-        df.to_csv(DIRECTORY_PATH+'/'+EXECUTION_NAME + '_' + note_id + '.csv', index=False)
+        df.to_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv'), index=False)
         saved_notes += 1
 
 # Save the predictions to a single csv
 concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH)
-concatenated_df.to_csv(EXECUTION_NAME + '_predictions.csv', index=False)
+concatenated_df.to_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_predictions.csv'), index=False)
 
 llm_query_helper.save_cache()
