@@ -121,7 +121,9 @@ class EntityLinkerLLM(EntityLinker):
             choose_by_frequency (bool):
                 Whether to choose the concept as the most frequent among the top 10. This is only used when the LLM is not used for EL or when it does not choose an option. Defaults to False.
             threshold (float): 
-                Threshold value to ignore entities. Value between 0 and 1.0. Defaults to None.    
+                Threshold value to ignore entities. Value between 0 and 1.0. Defaults to None.
+            spanish_version (bool):
+                Whether to use the Spanish version of the prompts. Otherwise, it uses the English prompts. Defaults to False.    
         """
         self.snomed = snomed
         self.snomed_embedder = snomed_embedder
@@ -340,9 +342,9 @@ class EntityLinkerLLM(EntityLinker):
         """
         # Find if it is an abbreviation by querying the LLM
         if self.spanish_version:
-            response_ab = self.llm_query.send_request_AB_es(sentence_text, span)
+            response_ab = self.llm_query.send_request_AB_es(sentence=sentence_text, span=span)
         else:
-            response_ab = self.llm_query.send_request_AB(sentence_text, span, section)
+            response_ab = self.llm_query.send_request_AB(sentence=sentence_text, span=span, section=section)
         
         # If there is an error, None is returned
         if response_ab is None:
