@@ -120,18 +120,13 @@ ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Procedure' : 'Procedure'}
 
 # Load the text files
-NOTES_FOLDER_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic_notes_test/')
-TRAIN_NOTES_PATH = os.path.join(BASE_DIR, 'mimic_notes_split', 'train_note_ids.txt')
-TEST_NOTES_PATH = os.path.join(BASE_DIR, 'mimic_notes_split', 'test_note_ids.txt')
+#NOTES_FOLDER_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic_notes_test/')
+NOTES_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic-iv_notes_test_set.csv')
 ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv')
 ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'train_annotations.csv')
 
 # Load the notes and annotations
-mimic = MIMIC_IV_dataset(NOTES_FOLDER_PATH, ANNOTATIONS_CSV_PATH)
-
-# Load the IDs of train notes
-with open(TRAIN_NOTES_PATH, 'r') as train_file:
-    train_notes_ids = [note.strip('\n') for note in train_file.readlines()]
+mimic = MIMIC_IV_dataset(notes_csv_path=NOTES_CSV_PATH, annotations_csv_path=ANNOTATIONS_CSV_PATH)
 
 # Load training concepts
 anns_train = pd.read_csv(ANNOTATIONS_TRAIN_CSV_PATH)
