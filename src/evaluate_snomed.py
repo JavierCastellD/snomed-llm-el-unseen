@@ -104,7 +104,7 @@ prediction_results = get_prediction_results(merged_df=merged_df, unseen_mentions
 
 print(f"SNOMED CT Entity Linking Challenge  -\t{prediction_results['correct_code']}\t{prediction_results['correct_mentions']}")
 print("Type\t\tEmb\tRer\tHits@1\tHits@5\tHits@10\tHits@20")
-for type in ['general', 'code', 'mentions']:#, 'mentions_seen_code']:
+for type in ['code', 'mentions']:#, 'mentions_seen_code']:
 
     rer = round(prediction_results[f'hits_reranker_{type}'][1]/prediction_results[f'len_{type}'] *100, 2)
     emb = round(prediction_results[f'hits_embedding_{type}'][1]/prediction_results[f'len_{type}'] *100, 2)
