@@ -17,13 +17,13 @@ triplet_type = sys.argv[2]
 dataset = sys.argv[3]
 
 if dataset == 'snomed':
-    DICTIONARY_PATH = os.path.join(BASE_DIR,"snomed_dictionaries", f"desc_ent_all_{model_name}_{triplet_type}_en_sct_dict.npz")
-    ID2NAME_PATH = os.path.join(BASE_DIR,"snomed_dictionaries", f"id2name_desc_ent_{model_name}_{triplet_type}_en_sct_dict.json")
-    EMBEDDING_PATH = os.path.join(BASE_DIR,"sentence_bert_models", f"{model_name}_{triplet_type}_en")
+    DICTIONARY_PATH = os.path.join(BASE_DIR, "snomed_dictionaries", f"desc_ent_all_{model_name}_{triplet_type}_en_sct_dict.npz")
+    ID2NAME_PATH = os.path.join(BASE_DIR, "snomed_dictionaries", f"id2name_desc_ent_{model_name}_{triplet_type}_en_sct_dict.json")
+    EMBEDDING_PATH = os.path.join(BASE_DIR, "sentence_bert_models", f"{model_name}_{triplet_type}_en")
 else:
-    DICTIONARY_PATH = os.path.join(BASE_DIR,"snomed_dictionaries", f"desc_ent_all_{model_name}_{triplet_type}_es_sct_dict_{dataset}.npz")
-    ID2NAME_PATH = os.path.join(BASE_DIR,"snomed_dictionaries", f"id2name_desc_ent_{model_name}_{triplet_type}_es_sct_dict_{dataset}.json")
-    EMBEDDING_PATH = os.path.join(BASE_DIR,"sentence_bert_models", f"{model_name}_{triplet_type}_es")
+    DICTIONARY_PATH = os.path.join(BASE_DIR, "snomed_dictionaries", f"desc_ent_all_{model_name}_{triplet_type}_es_sct_dict_{dataset}.npz")
+    ID2NAME_PATH = os.path.join(BASE_DIR, "snomed_dictionaries", f"id2name_desc_ent_{model_name}_{triplet_type}_es_sct_dict_{dataset}.json")
+    EMBEDDING_PATH = os.path.join(BASE_DIR, "sentence_bert_models", f"{model_name}_{triplet_type}_es")
 
 embedding_model = SentenceTransformerEM(EMBEDDING_PATH)
 
@@ -61,11 +61,11 @@ if dataset == 'snomed':
             snomed_names.append(description)
 else:
     if dataset == 'distemist':
-        TSV_PATH = os.path.join(BASE_DIR, 'el_datasets', 'distemist', 'dictionary_distemist.tsv')
+        TSV_PATH = os.path.join(BASE_DIR, 'temist', 'distemist', 'dictionary_distemist.tsv')
     elif dataset == 'medprocner':
-        TSV_PATH = os.path.join(BASE_DIR, 'el_datasets', 'medprocner', 'medprocner_gazetteer', 'gazzeteer_medprocner_v1_noambiguity.tsv')
+        TSV_PATH = os.path.join(BASE_DIR, 'temist', 'medprocner', 'medprocner_gazetteer', 'gazzeteer_medprocner_v1_noambiguity.tsv')
     elif dataset == 'symptemist':
-        TSV_PATH = os.path.join(BASE_DIR, 'el_datasets', 'symptemist', 'symptemist_gazetteer', 'symptemist_gazetter_snomed_ES_v2.tsv')
+        TSV_PATH = os.path.join(BASE_DIR, 'temist', 'symptemist', 'symptemist_gazetteer', 'symptemist_gazetter_snomed_ES_v2.tsv')
     else:
         raise ValueError("Invalid dataset. Choose from: snomed, distemist, medprocner, symptemist.")
 
