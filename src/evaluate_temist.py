@@ -16,8 +16,8 @@ predictions_path = sys.argv[2]
 train_set, test_set, gaz = load_temist_files(dataset=dataset, base_path="..", use_temist_naming=False)
 
 # Load Fernando's UC and UM
-df_um = pd.read_csv(os.path.join(BASE_DIR, 'el_datasets', f'{dataset}', 'df_um.tsv'), sep='\t')
-df_uc = pd.read_csv(os.path.join(BASE_DIR, 'el_datasets', f'{dataset}', 'df_uc.tsv'), sep='\t')
+df_um = pd.read_csv(os.path.join(BASE_DIR, 'temist', f'{dataset}', 'df_um.tsv'), sep='\t')
+df_uc = pd.read_csv(os.path.join(BASE_DIR, 'temist', f'{dataset}', 'df_uc.tsv'), sep='\t')
 
 unseen_mentions = [mention for mention in df_um['term']]
 unseen_codes = [int(code) for code in df_uc['code']]
@@ -65,7 +65,7 @@ prediction_results = get_prediction_results(merged_df=merged_df, unseen_mentions
 
 print(f"{dataset}  -\t{prediction_results['correct_code']}\t{prediction_results['correct_mentions']}")
 print("Type\t\tEmb\tRer\tHits@1\tHits@5\tHits@10\tHits@20")
-for type in ['general', 'code', 'mentions']:#, 'mentions_seen_code']:
+for type in ['code', 'mentions']:#, 'mentions_seen_code']:
 
     rer = round(prediction_results[f'hits_reranker_{type}'][1]/prediction_results[f'len_{type}'] *100, 2)
     emb = round(prediction_results[f'hits_embedding_{type}'][1]/prediction_results[f'len_{type}'] *100, 2)

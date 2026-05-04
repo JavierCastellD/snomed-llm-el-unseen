@@ -60,15 +60,15 @@ def load_temist_files(dataset : str = "distemist", base_path : str = "..", use_t
         dataset (str):
             Name of the dataset to be loaded: 'distemist', 'symptemist', or 'medprocner'.
         base_path (str):
-            Path to the 'el_datasets' folder.
+            Path to the 'temist' folder.
         use_temist_naming (bool):
             Whether the TEMIST datasets folder names remained unchange, i.e, DisTEMIST rather than distemist, etc.
     """
     if dataset == "distemist" or dataset == "DisTEMIST":
         if use_temist_naming:
-            folder_path = f"{base_path}/el_datasets/DisTEMIST"
+            folder_path = f"{base_path}/temist/DisTEMIST"
         else:
-            folder_path = f"{base_path}/el_datasets/distemist"
+            folder_path = f"{base_path}/temist/distemist"
         TSV_TRAINING_FILE_1 = f"{folder_path}/training/subtrack2_linking/distemist_subtrack2_training1_linking.tsv"
         TSV_TRAINING_FILE_2 = f"{folder_path}/training/subtrack2_linking/distemist_subtrack2_training2_linking.tsv"
         TSV_TEST_FILE = f"{folder_path}/test_annotated/subtrack2_linking/distemist_subtrack2_test_linking.tsv"
@@ -84,9 +84,9 @@ def load_temist_files(dataset : str = "distemist", base_path : str = "..", use_t
                     'semantic_rel' : 'sem_rel'}            
     elif dataset == "medprocner" or dataset == "MedProcNER":
         if use_temist_naming:
-            folder_path = f"{base_path}/el_datasets/MedProcNER"
+            folder_path = f"{base_path}/temist/MedProcNER"
         else:
-            folder_path = f"{base_path}/el_datasets/medprocner"
+            folder_path = f"{base_path}/temist/medprocner"
         TSV_TRAINING_FILE = f"{folder_path}/medprocner_train/tsv/medprocner_tsv_train_subtask2.tsv"
         TSV_TEST_FILE = f"{folder_path}/medprocner_test/tsv/medprocner_tsv_test_subtask2.tsv"
         GAZ_FILE = f"{folder_path}/medprocner_gazetteer/gazzeteer_medprocner_v1_noambiguity.tsv"
@@ -96,9 +96,9 @@ def load_temist_files(dataset : str = "distemist", base_path : str = "..", use_t
                     'end_span' : 'end'}
     elif dataset == "symptemist" or dataset == "SympTEMIST":
         if use_temist_naming:
-            folder_path = f"{base_path}/el_datasets/SympTEMIST"
+            folder_path = f"{base_path}/temist/SympTEMIST"
         else:
-            folder_path = f"{base_path}/el_datasets/symptemist"
+            folder_path = f"{base_path}/temist/symptemist"
         TSV_TRAINING_FILE = f"{folder_path}/symptemist_train/subtask2-linking/symptemist_tsv_train_subtask2.tsv"
         TSV_TEST_FILE = f"{folder_path}/symptemist_test/subtask2-linking/symptemist_tsv_test_subtask2.tsv"
         GAZ_FILE = f"{folder_path}/symptemist_gazetteer/symptemist_gazetter_snomed_ES_v2.tsv"

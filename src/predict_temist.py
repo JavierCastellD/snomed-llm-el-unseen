@@ -120,14 +120,14 @@ ner_type2hierarchy = {'Body structure' : 'Body structure',
 
 # Load the text files
 if dataset == "distemist":
-    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "el_datasets", "distemist", "test_annotated", "text_files")
-    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "el_datasets", "distemist", "test_annotated", "subtrack2_linking", "distemist_subtrack2_test_linking.tsv")
+    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "temist", "distemist", "test_annotated", "text_files")
+    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "temist", "distemist", "test_annotated", "subtrack2_linking", "distemist_subtrack2_test_linking.tsv")
 elif dataset == "medprocner":
-    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "el_datasets", "medprocner", "medprocner_test", "txt")
-    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "el_datasets", "medprocner", "medprocner_test", "tsv", "medprocner_tsv_test_subtask2.tsv")
+    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "temist", "medprocner", "medprocner_test", "txt")
+    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "temist", "medprocner", "medprocner_test", "tsv", "medprocner_tsv_test_subtask2.tsv")
 elif dataset == "symptemist":
-    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "el_datasets", "symptemist", "symptemist_test", "subtask2-linking", "symptemist_tsv_test_subtask2.tsv")
-    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "el_datasets", "symptemist", "symptemist_test", "subtask2-linking", "symptemist_tsv_test_subtask2.tsv")
+    NOTES_FOLDER_PATH = os.path.join(BASE_DIR, "temist", "symptemist", "symptemist_test", "subtask2-linking", "symptemist_tsv_test_subtask2.tsv")
+    ANNOTATIONS_TSV_PATH = os.path.join(BASE_DIR, "temist", "symptemist", "symptemist_test", "subtask2-linking", "symptemist_tsv_test_subtask2.tsv")
 
 temist = TEMIST_dataset(notes_folder_path=NOTES_FOLDER_PATH, annotations_tsv_path=ANNOTATIONS_TSV_PATH, dataset_type=dataset,
                         ignore_combined=True, ignore_no_code=True)
