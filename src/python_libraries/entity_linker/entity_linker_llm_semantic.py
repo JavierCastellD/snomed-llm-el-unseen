@@ -40,7 +40,9 @@ class EntityLinkerLLMSemantic(EntityLinkerLLM):
             choose_by_frequency (bool):
                 Whether to choose the concept as the most frequent among the top 10. This is only used when the LLM is not used for EL or when it does not choose an option. Defaults to False.
             threshold (float): 
-                Threshold value to ignore entities. Value between 0 and 1.0. Defaults to None.    
+                Threshold value to ignore entities. Value between 0 and 1.0. Defaults to None.
+            spanish_version (bool):
+                Whether to use the Spanish version of the prompts. Otherwise, it uses the English prompts. Defaults to False.        
         """
         super().__init__(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query,
                          disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el,

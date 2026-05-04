@@ -549,14 +549,17 @@ class MIMIC_IV_dataset(AnnotatedDataset):
         annotations (dict):
             Dictionary that stores, for each note_id, its corresponding annotations and text.
     """
-    def __init__(self, notes_folder_path : str, annotation_csv_path : str) -> None:
-        """Loads the notes and annotations into the class.
+    def __init__(self, notes_folder_path : str, notes_csv_path : str, annotation_csv_path : str) -> None:
+        """Loads the notes and annotations into the class. It needs the path to the CSV with the annotations,
+        and either the path to the folder with the notes or the path to a CSV that contains the notes.
         
         Parameters:
             notes_folder_path (str):
                 Path to the folder where the notes are found.
+            notes_csv_path (str):
+                Path to the CSV file containing the notes.
             annotation_csv_path (str):
-                Path to the annotation CSV file. Only the notes whose id is found
+                Path to the annotation CSV file. Only the notes whose ids are found
                 in the CSV will be loaded into the class.
         """
         # Read the DF with the annotations
@@ -578,11 +581,16 @@ class MIMIC_IV_dataset(AnnotatedDataset):
                 current_note_id = note_id
 
                 # Load the note
-                note_path = notes_folder_path + current_note_id + '.txt'
-                with open(note_path, 'r', encoding='utf-8') as text_file:
-                    text = text_file.read()
+                if notes_csv_path is not None:
+                    notes_df = pd.read_csv(notes_csv_path)
+                    note_row = notes_df[notes_df['note_id'] == current_note_id]
+                    text = note_row['text'].iloc[0]
+                else:
+                    note_path = notes_folder_path + current_note_id + '.txt'
+                    with open(note_path, 'r', encoding='utf-8') as text_file:
+                        text = text_file.read()
 
-                    self.annotations[current_note_id] = {'text' : text, 'annotations' : []}
+                self.annotations[current_note_id] = {'text' : text, 'annotations' : []}
 
             # Crete the annotation entry and add it to the dictionary
             self.annotations[current_note_id]['annotations'].append({'start' : row['start'],

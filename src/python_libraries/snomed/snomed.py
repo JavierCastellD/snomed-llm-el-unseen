@@ -262,13 +262,22 @@ class Snomed:
         if sct_id == ROOT_CONCEPT:
             return 1
         
-        if sct_id in self.concepts:
-            parent_id = [destID for destID, typeID in self.concepts[sct_id]['relations'] if typeID == IS_A_ID][0]
-        elif sct_id in self.metadata:
-            parent_id = [destID for destID, typeID in self.metadata[sct_id]['relations'] if typeID == IS_A_ID][0]
-        else:
+        # Identify if the concept is in the concepts or in the metadata, as we treat them separately
+        hierarchy_to_search = self.concepts if sct_id in self.concepts else self.metadata if sct_id in self.metadata else None
+
+        # If the concept is not part of SNOMED CT, we return -1
+        if hierarchy_to_search is None:
             return -1
-        return self.get_depth(parent_id) + 1
+        
+        # Identify its parents
+        parents = [destID for destID, typeID in hierarchy_to_search[sct_id]['relations'] if typeID == IS_A_ID]
+        
+        # If there are no parents, it means that this concept is excluded from the hierarchy, so we return a -1
+        if len(parents) == 0:
+            return -1
+        
+        # Otherwise, we return the maximum depth of one of its parents plus one 
+        return self.get_depth(parents[0]) + 1
 
     def get_sct_concepts(self, concepts : bool = True, metadata : bool = True):
         """Method that returns the concepts in SNOMED CT. If concepts is set to true, non-metadata concepts

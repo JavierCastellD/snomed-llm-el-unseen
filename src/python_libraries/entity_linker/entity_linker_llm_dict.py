@@ -83,6 +83,11 @@ class EntityLinkerLLMDictionary(EntityLinkerRerankerLLMSemantic):
             ner_type2hierarchy (dict[str, str]):
                 Dictionary to map the NER type assigned to the Entity to the concept type assigned in the SnomedEmbedder. 
                 By default assigns 'body', 'fin', and 'pro' tags to the corresponding names in SNOMED CT.
+            training_concepts (list[int]):
+                List of SNOMED CT concept IDs that are seen during training. It is used to decide whether to add a training bias to the confidence value of the predictions.
+                If None, it is extracted from the span_dictionary. Defaults to None.
+            spanish_version (bool):
+                Whether to use the Spanish version of the prompts. Otherwise, it uses the English prompts. Defaults to False. 
         """
         super().__init__(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query, reranker=reranker, disambiguate_abbreviations=disambiguate_abbreviations, 
                          llm_for_el=llm_for_el, rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, threshold=threshold, number_of_options=number_of_options, 
@@ -487,6 +492,8 @@ class EntityLinkerLLMDictionary(EntityLinkerRerankerLLMSemantic):
                 Section where the span was found.
             new_span (str):
                 Additional span for the dictionary approach. It can be None.
+            use_both_spans_for_dict (bool):
+                Whether to use both span and new_span for the dictionary entry. Defaults to False.
 
         Returns:
             An int that represents the SNOMED CT ID of the concept or None if no valid entry was found.

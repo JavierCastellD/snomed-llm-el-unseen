@@ -1,9 +1,12 @@
+import os
 import sys
 
 import pandas as pd
 
 from python_libraries.snomed import Snomed
 from python_libraries.utils import load_temist_files, get_prediction_results
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Load names
 dataset= sys.argv[1]
@@ -13,8 +16,8 @@ predictions_path = sys.argv[2]
 train_set, test_set, gaz = load_temist_files(dataset=dataset, base_path="..", use_temist_naming=False)
 
 # Load Fernando's UC and UM
-df_um = pd.read_csv(f'el_datasets/{dataset}/df_um.tsv', sep='\t')
-df_uc = pd.read_csv(f'el_datasets/{dataset}/df_uc.tsv', sep='\t')
+df_um = pd.read_csv(os.path.join(BASE_DIR, 'temist', f'{dataset}', 'df_um.tsv'), sep='\t')
+df_uc = pd.read_csv(os.path.join(BASE_DIR, 'temist', f'{dataset}', 'df_uc.tsv'), sep='\t')
 
 unseen_mentions = [mention for mention in df_um['term']]
 unseen_codes = [int(code) for code in df_uc['code']]
@@ -46,9 +49,10 @@ merged_df['correct_id'] = merged_df['correct_id'].fillna(-1).astype('Int64')
 merged_df['concept_id'] = merged_df['concept_id'].fillna(-1).astype('Int64')
 
 # Load SNOMED
-CONCEPTS_PATH = './snomed_data/conceptInternational_20230531.txt'
-RELATIONS_PATH = './snomed_data/relationshipInternational_20230531.txt'
-DESCRIPTIONS_PATH = './snomed_data/descriptionInternational_20230531.txt'
+SNOMED_VERSION = "20221031"
+CONCEPTS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'conceptInternational_{SNOMED_VERSION}.txt')
+RELATIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'relationshipInternational_{SNOMED_VERSION}.txt')
+DESCRIPTIONS_PATH = os.path.join(BASE_DIR, 'snomed_data', f'descriptionSpanish_{SNOMED_VERSION}.txt')
 
 snomed = Snomed(CONCEPTS_PATH, RELATIONS_PATH, DESCRIPTIONS_PATH, add_inactive=True)
 
@@ -61,7 +65,7 @@ prediction_results = get_prediction_results(merged_df=merged_df, unseen_mentions
 
 print(f"{dataset}  -\t{prediction_results['correct_code']}\t{prediction_results['correct_mentions']}")
 print("Type\t\tEmb\tRer\tHits@1\tHits@5\tHits@10\tHits@20")
-for type in ['general', 'code', 'mentions']:#, 'mentions_seen_code']:
+for type in ['code', 'mentions']:#, 'mentions_seen_code']:
 
     rer = round(prediction_results[f'hits_reranker_{type}'][1]/prediction_results[f'len_{type}'] *100, 2)
     emb = round(prediction_results[f'hits_embedding_{type}'][1]/prediction_results[f'len_{type}'] *100, 2)
