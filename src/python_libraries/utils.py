@@ -48,8 +48,8 @@ def load_mimic(path_to_mimic_data : str = ".."):
     ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'train_annotations.csv')
 
     # Load the notes and annotations
-    mimic_train = MIMIC_IV_dataset(notes_csv_path=NOTES_TRAIN_CSV_PATH, annotations_csv_path=ANNOTATIONS_TRAIN_CSV_PATH)
-    mimic_test = MIMIC_IV_dataset(notes_csv_path=NOTES_TEST_CSV_PATH, annotations_csv_path=ANNOTATIONS_TEST_CSV_PATH)
+    mimic_train = MIMIC_IV_dataset(annotations_csv_path=ANNOTATIONS_TRAIN_CSV_PATH, notes_csv_path=NOTES_TRAIN_CSV_PATH)
+    mimic_test = MIMIC_IV_dataset(annotations_csv_path=ANNOTATIONS_TEST_CSV_PATH, notes_csv_path=NOTES_TEST_CSV_PATH)
 
     return mimic_train, mimic_test
 

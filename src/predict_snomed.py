@@ -126,7 +126,7 @@ ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.cs
 ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'train_annotations.csv')
 
 # Load the notes and annotations
-mimic = MIMIC_IV_dataset(notes_csv_path=NOTES_CSV_PATH, annotations_csv_path=ANNOTATIONS_CSV_PATH)
+mimic = MIMIC_IV_dataset(annotations_csv_path=ANNOTATIONS_CSV_PATH, notes_csv_path=NOTES_CSV_PATH)
 
 # Load training concepts
 anns_train = pd.read_csv(ANNOTATIONS_TRAIN_CSV_PATH)

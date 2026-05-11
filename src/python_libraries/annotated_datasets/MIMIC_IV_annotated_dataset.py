@@ -549,19 +549,22 @@ class MIMIC_IV_dataset(AnnotatedDataset):
         annotations (dict):
             Dictionary that stores, for each note_id, its corresponding annotations and text.
     """
-    def __init__(self, notes_folder_path : str, notes_csv_path : str, annotation_csv_path : str) -> None:
+    def __init__(self, annotation_csv_path : str, notes_folder_path : str = None, notes_csv_path : str = None) -> None:
         """Loads the notes and annotations into the class. It needs the path to the CSV with the annotations,
         and either the path to the folder with the notes or the path to a CSV that contains the notes.
         
         Parameters:
+            annotation_csv_path (str):
+                Path to the annotation CSV file. Only the notes whose ids are found
+                in the CSV will be loaded into the class.
             notes_folder_path (str):
                 Path to the folder where the notes are found.
             notes_csv_path (str):
                 Path to the CSV file containing the notes.
-            annotation_csv_path (str):
-                Path to the annotation CSV file. Only the notes whose ids are found
-                in the CSV will be loaded into the class.
         """
+        if notes_folder_path is None and notes_csv_path is None:
+            raise ValueError('At least one of notes_folder_path and notes_csv_path must be provided')
+
         # Read the DF with the annotations
         annotations_df = pd.read_csv(annotation_csv_path)
 
