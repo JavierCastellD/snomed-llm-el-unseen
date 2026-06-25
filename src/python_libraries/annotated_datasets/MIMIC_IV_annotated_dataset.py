@@ -676,4 +676,28 @@ class MIMIC_IV_dataset(AnnotatedDataset):
             sentences_annotations += fix_annotations_per_sentence(sentences, annotated_text_sections[section]['annotations'], transform=transform, section=section, adapt_indexes=adapt_annotation_index)
 
         return sentences_annotations
-            
+    
+    def get_annotated_text_sections_from_note(self, note_id : str) -> dict[str]:
+        """Method that returns the sections and annotations for a given text from MIMIC. The sections are returned as a dictionary where each key is a section name and each value is another dictionary with information about the section, such
+        as the text, annotations, or its start and end positions.
+        
+        Parameters:
+            note_id (str):
+                String that represents the identifier of the note.
+
+        Returns:
+            A dictionary where each key is a section name and each value is another dictionary with the following keys: text, annotations, start, end, and span_start.
+        """
+        # Obtain current text
+        text = self.get_note_text(note_id)
+
+        # Obtain the annotations
+        annotations = self.get_note_annotations(note_id)
+
+        # Segment the text into sections
+        text_sections = extract_sections(text)
+
+        # Find the annotations for each text_section
+        annotated_text_sections = find_annotations_per_section(text_sections, annotations)
+
+        return annotated_text_sections
