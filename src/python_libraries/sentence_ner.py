@@ -135,21 +135,26 @@ class Entity:
 
 class Sentence:
     """Class wrapper for a sentence and information about it like the section or the entities found in it.
-    
+
     Attributes:
         text (str):
             Text of the sentence.
-        
+
         section (str):
             Section to which the sentence corresponds to.
 
         entities (list[Entity]):
             List of entities found in the sentence.
+
+        original_start (int):
+            True offset of this sentence's text within the original, unmodified document text.
+            None if unknown (e.g. not computed by the dataset loader).
     """
-    def __init__(self, text : str, section : str = "", entities : list[Entity] = []):
+    def __init__(self, text : str, section : str = "", entities : list[Entity] = [], original_start : int = None):
         self.text = text
         self.section = section
         self.entities = entities
+        self.original_start = original_start
 
     def add_entities(self, entities : list[Entity]):
         """Method to add entities to the list of entities found in the sentence.
