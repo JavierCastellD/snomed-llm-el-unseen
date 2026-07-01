@@ -42,14 +42,14 @@ def load_model_paths_es(embedding_type : str, triplet_type : str, dataset : str,
     return embedding_info
 
 def load_mimic(path_to_mimic_data : str = ".."):
-    NOTES_TEST_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'mimic-iv_notes_training_set.csv')
-    NOTES_TRAIN_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'mimic-iv_notes_test_set.csv')
-    ANNOTATIONS_TEST_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'test_annotations.csv')
+    NOTES_TRAIN_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'mimic-iv_notes_training_set.csv')
+    NOTES_TEST_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'mimic-iv_notes_test_set.csv')
     ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'train_annotations.csv')
+    ANNOTATIONS_TEST_CSV_PATH = os.path.join(path_to_mimic_data, 'mimic_data', 'test_annotations.csv')
 
     # Load the notes and annotations
-    mimic_train = MIMIC_IV_dataset(annotations_csv_path=ANNOTATIONS_TRAIN_CSV_PATH, notes_csv_path=NOTES_TRAIN_CSV_PATH)
-    mimic_test = MIMIC_IV_dataset(annotations_csv_path=ANNOTATIONS_TEST_CSV_PATH, notes_csv_path=NOTES_TEST_CSV_PATH)
+    mimic_train = MIMIC_IV_dataset(annotation_csv_path=ANNOTATIONS_TRAIN_CSV_PATH, notes_csv_path=NOTES_TRAIN_CSV_PATH)
+    mimic_test = MIMIC_IV_dataset(annotation_csv_path=ANNOTATIONS_TEST_CSV_PATH, notes_csv_path=NOTES_TEST_CSV_PATH)
 
     return mimic_train, mimic_test
 
@@ -198,8 +198,9 @@ def load_config(config_path : str):
 
     config_dic = {}
 
-    config_dic['execution_name'] = config_run['CONF']['execution_name']
-    config_dic['span_dictionary_path'] = config_run['CONF']['span_dictionary_path']
+    config_dic['execution_name'] = config_run.get('CONF', 'execution_name', fallback=None)
+    config_dic['span_dictionary_path'] = config_run.get('CONF', 'span_dictionary_path', fallback=None)
+    config_dic['checkpoints_folder'] = config_run.get('CONF', 'checkpoints_folder', fallback='el_checkpoints')
 
     config_dic['disambiguate_abbreviations'] = config_run.getboolean('CONF', 'disambiguate_abbreviations')
     config_dic['llm_for_el'] = config_run.getboolean('CONF', 'llm_for_el')
@@ -208,25 +209,28 @@ def load_config(config_path : str):
     config_dic['use_fsn'] = config_run.getboolean('CONF', 'use_fsn')
     config_dic['number_of_options'] = config_run.getint('CONF', 'number_of_options')
     config_dic['rerank_top_n'] = config_run.getint('CONF', 'rerank_top_n')
-    config_dic['trust_training'] = config_run.getboolean('CONF', 'trust_training')
+    config_dic['trust_training'] = config_run.getboolean('CONF', 'trust_training', fallback=False)
     config_dic['use_reranker'] = config_run.getboolean('CONF', 'use_reranker')
 
-    config_dic['threshold_for_dictionary'] = None if config_run['CONF']['threshold_for_dictionary'] == 'None' else config_run.getfloat('CONF', 'threshold_for_dictionary') #config_run.getfloat('CONF', 'threshold_for_dictionary', fallback=None)
-    config_dic['threshold'] = None if config_run['CONF']['threshold'] == 'None' else config_run.getfloat('CONF', 'threshold') #config_run.getfloat('CONF', 'threshold', fallback=None)
+    config_dic['threshold_for_dictionary'] = None if not config_run.has_option('CONF', 'threshold_for_dictionary') or config_run['CONF']['threshold_for_dictionary'] == 'None' else config_run.getfloat('CONF', 'threshold_for_dictionary')
+    config_dic['threshold'] = None if config_run['CONF']['threshold'] == 'None' else config_run.getfloat('CONF', 'threshold')
 
     # CONFIGURATION FOR DICT OPTIONS
     config_dic['dictionary_options'] = {}
 
-    config_dic['dictionary_options']['method'] = config_run['OPTS']['method']
-    config_dic['dictionary_options']['use_new_span'] = config_run.getboolean('OPTS', 'use_new_span') 
-    config_dic['dictionary_options']['use_both_spans_for_dict'] = config_run.getboolean('OPTS', 'use_both_spans_for_dict')
-    config_dic['dictionary_options']['use_synonyms'] = config_run.getboolean('OPTS', 'use_synonyms')
-    config_dic['dictionary_options']['use_new_span_for_llm'] = config_run.getboolean('OPTS', 'use_new_span_for_llm')
-    config_dic['dictionary_options']['use_new_span_for_validation_and_llm'] = config_run.getboolean('OPTS', 'use_new_span_for_validation_and_llm')
-    config_dic['dictionary_options']['trust_validation'] = config_run.getboolean('OPTS', 'trust_validation')
-    config_dic['dictionary_options']['rerank_validation'] = config_run.getboolean('OPTS', 'rerank_validation')
-    config_dic['dictionary_options']['top_concepts_embeddings'] = config_run.getint('OPTS', 'top_concepts_embeddings')
-    config_dic['dictionary_options']['top_validation_reranked'] = config_run.getint('OPTS', 'top_validation_reranked')
+    if config_run.has_section('OPTS'):
+        config_dic['dictionary_options']['method'] = config_run['OPTS']['method']
+        config_dic['dictionary_options']['use_new_span'] = config_run.getboolean('OPTS', 'use_new_span')
+        config_dic['dictionary_options']['use_both_spans_for_dict'] = config_run.getboolean('OPTS', 'use_both_spans_for_dict')
+        config_dic['dictionary_options']['use_synonyms'] = config_run.getboolean('OPTS', 'use_synonyms')
+        config_dic['dictionary_options']['use_new_span_for_llm'] = config_run.getboolean('OPTS', 'use_new_span_for_llm')
+        config_dic['dictionary_options']['use_new_span_for_validation_and_llm'] = config_run.getboolean('OPTS', 'use_new_span_for_validation_and_llm')
+        config_dic['dictionary_options']['trust_validation'] = config_run.getboolean('OPTS', 'trust_validation')
+        config_dic['dictionary_options']['rerank_validation'] = config_run.getboolean('OPTS', 'rerank_validation')
+        config_dic['dictionary_options']['top_concepts_embeddings'] = config_run.getint('OPTS', 'top_concepts_embeddings')
+        config_dic['dictionary_options']['top_validation_reranked'] = config_run.getint('OPTS', 'top_validation_reranked')
+        config_dic['dictionary_options']['preprocess_span'] = config_run.getboolean('OPTS', 'preprocess_span', fallback=False)
+        config_dic['dictionary_options']['preprocess_new_span'] = config_run.getboolean('OPTS', 'preprocess_new_span', fallback=False)
 
     if config_run.has_option('CONF', 'threshold_for_reranker'):
         config_dic['dictionary_options']['threshold_reranker'] = None if config_run['CONF']['threshold_for_reranker'] == 'None' else config_run.getfloat('CONF', 'threshold_for_reranker')
@@ -238,17 +242,7 @@ def load_config(config_path : str):
     else:
         config_dic['dictionary_options']['threshold_llm'] = None
 
-    if config_run.has_option('OPTS', 'preprocess_span'):
-        config_dic['dictionary_options']['preprocess_span'] = config_run.getboolean('OPTS', 'preprocess_span')
-    else:
-        config_dic['dictionary_options']['preprocess_span'] = False
-
-    if config_run.has_option('OPTS', 'preprocess_new_span'):
-        config_dic['dictionary_options']['preprocess_new_span'] = config_run.getboolean('OPTS', 'preprocess_new_span')
-    else:
-        config_dic['dictionary_options']['preprocess_new_span'] = False
-
-    return config_dic
+    return config_dic, config_run
 
 def get_prediction_results(merged_df, unseen_mentions = None, unseen_codes = None) -> dict:
     """Returns a dictionary with predictions, which contains the following keys:
@@ -289,18 +283,19 @@ def get_prediction_results(merged_df, unseen_mentions = None, unseen_codes = Non
         hits_threshold = [1, 5, 10, 20, 25]
         hits = {h : 0 for h in hits_threshold}
 
-        if 'reranker' in f_merged_df:
-            hits_rerank = {h : 0 for h in hits_threshold}
+        hits_rerank = {h : 0 for h in hits_threshold}
 
         for i, row in f_merged_df.iterrows():
-            options = ast.literal_eval(row['original_concepts'])            
+            if pd.isna(row['original_concepts']):
+                continue
+            options = ast.literal_eval(row['original_concepts'])
             correct_id = int(row['correct_id'])
 
             for hit in hits_threshold:
                 if correct_id in options[:hit]:
                     hits[hit] += 1
-            
-            if 'reranker' in f_merged_df:
+
+            if 'reranker' in f_merged_df and not pd.isna(row['reranker']):
                 rerank_options = ast.literal_eval(row['reranker'])
                 for hit in hits_threshold:
                     if correct_id in rerank_options[:hit]:
