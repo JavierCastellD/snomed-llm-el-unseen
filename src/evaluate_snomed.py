@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 import pandas as pd
@@ -6,19 +7,32 @@ import pandas as pd
 from python_libraries.snomed import Snomed
 from python_libraries.utils import load_mimic, get_prediction_results
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 # Load names
 predictions_path = sys.argv[1]
 
-# Load the TEMIST predictions
-mimic_train, mimic_test = load_mimic()
-
-# Load annotations
+# Load MIMIC and annotations
+_, mimic_test = load_mimic(path_to_mimic_data=BASE_DIR)
 df_test = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv'))
+
+# Add span columns (not stored in CSV — derived from note text)
+spans = []
+span_preps = []
+for _, row in df_test.iterrows():
+    text = mimic_test.get_note_text(row['note_id'])
+    original = text[row['start']:row['end']]
+    spans.append(re.sub(r'\n', '', original.lower()))
+    t = original.lower().replace('\n', '')
+    t = re.sub(r'[^a-z]', '', t)
+    t = re.sub(r'\s+', ' ', t).strip()
+    span_preps.append(t)
+df_test['span'] = spans
+df_test['span_prep'] = span_preps
 
 # Load the predictions
 predictions = pd.read_csv(predictions_path)
+predictions = predictions.rename(columns={'filename': 'note_id'})
 
 # Merge correct with predictions
 merged_df = predictions.merge(
@@ -36,8 +50,8 @@ merged_df['correct_id'] = merged_df['correct_id'].fillna(-1).astype('Int64')
 merged_df['concept_id'] = merged_df['concept_id'].fillna(-1).astype('Int64')
 
 # Load SNOMED's UC and UM
-df_um = pd.read_csv(os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge_UM.tsv'), sep='\t')
-df_uc = pd.read_csv(os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge_UC.tsv'), sep='\t')
+df_um = pd.read_csv(os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge_UM.csv'))
+df_uc = pd.read_csv(os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge_UC.csv'))
 
 unseen_mentions = [mention for mention in df_um['span']]
 unseen_codes = [int(code) for code in df_uc['concept_id']]
