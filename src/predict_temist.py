@@ -30,15 +30,12 @@ else:
 config_dic, config = load_config(config_run_file)
 
 disambiguate_abbreviations = config_dic['disambiguate_abbreviations']
-llm_for_el = config_dic['llm_for_el']
 rephrase = config_dic['rephrase']
 replace_span = config_dic['replace_span']
 use_fsn = config_dic['use_fsn']
 number_of_options = config_dic['number_of_options']
 rerank_top_n = config_dic['rerank_top_n']
 use_reranker = config_dic['use_reranker']
-
-threshold = config_dic['threshold']
 
 # CONFIGURATION FOR DICT OPTIONS
 dictionary_options = config_dic['dictionary_options']
@@ -135,9 +132,9 @@ temist = TEMIST_dataset(notes_folder_path=NOTES_FOLDER_PATH, annotations_tsv_pat
 
 # Load the Entity Linker
 entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
-                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el,
+                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations,
                                         rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
-                                        threshold=threshold, ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
+                                        ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
 
 # Load the Snomed Pipe
 snomed_pipe = SnomedPipe(entity_linker)

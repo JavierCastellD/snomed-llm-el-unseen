@@ -29,9 +29,8 @@ class EntityLinkerAdaptiveLLM(EntityLinkerRerankerLLMSemantic):
             Whether the LLM threshold is active.
     """
     def __init__(self, snomed : Snomed, snomed_embedder : SnomedEmbedder, llm_query : LLMQueryHelper, reranker : Reranker, dictionary_options : dict[str],
-                 disambiguate_abbreviations : bool = True, llm_for_el : bool = True, rephrase : bool = False, replace_span : bool = True, use_fsn : bool = False, 
-                 threshold : float = None, number_of_options : int = 50, rerank_top_n : int = 10,  ner_type2hierarchy : dict[str, str] = None,
-                 spanish_version : bool = False):
+                 disambiguate_abbreviations : bool = True, rephrase : bool = False, replace_span : bool = True, use_fsn : bool = False,
+                 number_of_options : int = 50, rerank_top_n : int = 10, ner_type2hierarchy : dict[str, str] = None, spanish_version : bool = False):
         """Initializes the attributes of the class.
         Parameters:
             snomed (Snomed):
@@ -47,28 +46,24 @@ class EntityLinkerAdaptiveLLM(EntityLinkerRerankerLLMSemantic):
                 to set the embedding confidence threshold above which the LLM step is skipped.
             disambiguate_abbreviations (bool):
                 Whether or not to disambiguate the abbreviations spans found.
-            llm_for_el (bool):
-                Whether or not to use the LLM for choosing the corresponding concept. If set to false, the most similar one according to cosine similarity will be selected.
             rephrase (bool):
                 Whether or not to use the LLM to rephrase the spans detected according to the sentence. Defaults to False.
             replace_span (bool):
                 Whether to replace the disambiguated or rephrased span in the original sentence text for the LLM. Defaults to True.
             use_fsn (bool):
                 Whether or not to use the FSN of the most similar concept instead of the detected synonym. Defaults to False.
-            threshold (float): 
-                Threshold value to ignore entities. Value between 0 and 1.0. Defaults to None.
             number_of_options (int):
                 Number of candidates for the reranker to reorder.
             rerank_top_n (int):
                 Number of candidates to return.
             ner_type2hierarchy (dict[str, str]):
-                Dictionary to map the NER type assigned to the Entity to the concept type assigned in the SnomedEmbedder. 
+                Dictionary to map the NER type assigned to the Entity to the concept type assigned in the SnomedEmbedder.
                 By default assigns 'body', 'fin', and 'pro' tags to the corresponding names in SNOMED CT.
             spanish_version (bool):
-                Whether to use the Spanish version of the prompts. Otherwise, it uses the English prompts. Defaults to False. 
+                Whether to use the Spanish version of the prompts. Otherwise, it uses the English prompts. Defaults to False.
         """
-        super().__init__(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query, reranker=reranker, disambiguate_abbreviations=disambiguate_abbreviations, 
-                         llm_for_el=llm_for_el, rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, threshold=threshold, number_of_options=number_of_options, 
+        super().__init__(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query, reranker=reranker, disambiguate_abbreviations=disambiguate_abbreviations,
+                         llm_for_el=True, rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, threshold=None, number_of_options=number_of_options,
                          rerank_top_n=rerank_top_n, ner_type2hierarchy=ner_type2hierarchy, spanish_version=spanish_version)
         
         self.use_reranker = True
@@ -140,49 +135,37 @@ class EntityLinkerAdaptiveLLM(EntityLinkerRerankerLLMSemantic):
 
             entity.set_confidence(confidence_embedding)
 
-            # If we are using a threshold and the embedding it is not good enough
-            # we skip it
-            if self.apply_threshold and confidence_embedding < self.threshold:
-                entity.set_label("-1")
+            # Reorder the options using the reranker
+            concept_ids, concept_names, top_scores = self._reorder_ids_names(concept_ids_orig, names, new_span, entity, return_top_scores=True)
+            confidence_reranker = top_scores[0]
+
+            # Set confidence reranker
+            entity.other['confidence_reranker'] = confidence_reranker
+
+            # And we either let the LLM choose or take the top option
+            needs_disambiguation = sim_vals[0] == sim_vals[1]
+
+            # If the confidence of the embedding is greater than the threshold for LLM, we ignore the LLM
+            if not needs_disambiguation and (self.apply_threshold_for_llm and confidence_embedding >= self.threshold_for_llm):
+                concept_id = None
             else:
-                # If we want to find the option, we might want to use a reranker to
-                # reorder the options
-                if self.use_reranker:
-                    concept_ids, concept_names, top_scores = self._reorder_ids_names(concept_ids_orig, names, new_span, entity, return_top_scores=True)
-                    confidence_reranker = top_scores[0]
-                else:
-                    concept_ids = concept_ids_orig
-                    concept_names = names
-                    confidence_reranker = confidence_embedding
+                # Disambiguate potential duplicates, i.e, infiltration (procedure) vs infiltration (morphologic abnormality)
+                concept_names = self._disambiguate_concepts_names(concept_ids, concept_names)
+                entity.other['names_for_el'] = concept_names
+                entity.other['LLM_chose'] = 'YES'
 
-                # Set confidence reranker
-                entity.other['confidence_reranker'] = confidence_reranker
+                # Find the most similar concept by querying the LLM
+                concept_id = self._find_concept_id(new_sentence_text, span=new_span, section=section, concept_ids=concept_ids, concept_names=concept_names)
+                
+                # Set the options
+                entity.set_options(concept_ids)
+                entity.set_label(concept_id)
 
-                # And we either let the LLM choose or take the top option
-                if self.llm_for_el:
-                    needs_disambiguation = sim_vals[0] == sim_vals[1]
-
-                    # If the confidence of the embedding is greater than the threshold for LLM, we ignore the LLM
-                    if not needs_disambiguation and (self.apply_threshold_for_llm and confidence_embedding >= self.threshold_for_llm):
-                        concept_id = None
-                    else:
-                        # Disambiguate potential duplicates, i.e, infiltration (procedure) vs infiltration (morphologic abnormality)
-                        concept_names = self._disambiguate_concepts_names(concept_ids, concept_names)
-                        entity.other['names_for_el'] = concept_names
-                        entity.other['LLM_chose'] = 'YES'
-
-                        # Find the most similar concept by querying the LLM
-                        concept_id = self._find_concept_id(new_sentence_text, span=new_span, section=section, concept_ids=concept_ids, concept_names=concept_names)
-                        
-                        # Set the options
-                        entity.set_options(concept_ids)
-                        entity.set_label(concept_id)
-
-                    # If the LLM did not choose or we do not want to use an LLM
-                    if not self.llm_for_el or concept_id is None:
-                        entity.set_label(concept_ids_orig[0]) # Using embedding option
-                        # entity.set_label(concept_ids[0]) # Using reranker option
-                        entity.other['LLM_chose'] = 'NO'
+            # If the LLM did not choose or we do not want to use an LLM
+            if concept_id is None:
+                entity.set_label(concept_ids_orig[0]) # Using embedding option
+                # entity.set_label(concept_ids[0]) # Using reranker option
+                entity.other['LLM_chose'] = 'NO'
 
     def _obtain_concepts_options(self, span : str, entity : Entity):
         """Method that returns a list of the most appropiate concepts to be chosen for a given entity and span.
