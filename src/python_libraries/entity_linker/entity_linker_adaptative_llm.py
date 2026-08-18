@@ -42,8 +42,9 @@ class EntityLinkerAdaptiveLLM(EntityLinkerRerankerLLMSemantic):
                 LLMQueryHelper object that helps perform the queries to the LLMs.
             reranker (Reranker):
                 Reranker object to order the potential candidates obtained from the embeddings.
-            use_reranker (bool):
-                Whether to use the reranker or not for the entity linking.
+            dictionary_options (dict[str]):
+                Dictionary that contains the configuration for the dictionary approach. Only 'threshold_llm' is used here,
+                to set the embedding confidence threshold above which the LLM step is skipped.
             disambiguate_abbreviations (bool):
                 Whether or not to disambiguate the abbreviations spans found.
             llm_for_el (bool):
