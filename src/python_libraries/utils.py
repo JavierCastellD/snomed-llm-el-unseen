@@ -12,19 +12,7 @@ def load_model_paths_es(embedding_type : str, triplet_type : str, dataset : str,
     """Loads the paths for the embedding model, the embedding dictionary, the cross-encoder, and the id2name dictionary, 
     according to the given embedding type, triplet configuration, and dataset."""
     embedding_info = {}
-    if embedding_type == "sapbert_esp":
-        embedding_info['emb_model_path'] = "BSC-NLP4BIA/SapBERT-from-roberta-base-biomedical-clinical-es"
-        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_sapbert_roberta_es_sct_dict_{dataset}.npz"
-        
-        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/ce_50_{dataset}_sapbert_spanish"
-        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_sapbert_roberta_es_sct_dict_{dataset}.json"
-    elif embedding_type == "roberta":
-        embedding_info['emb_model_path'] = "PlanTL-GOB-ES/roberta-base-biomedical-clinical-es"
-        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_roberta_base_es_sct_dict_{dataset}.npz"
-        
-        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/ce_50_{dataset}_roberta"
-        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_roberta_base_es_sct_dict_{dataset}.json"
-    elif embedding_type in ['sapbert', 'pubmed', 'sapbert_pubmed', 'sapbert_roberta']:
+    if embedding_type in ['sapbert', 'pubmed', 'sapbert_pubmed', 'sapbert_roberta']:
         embedding_info['emb_model_path'] = f"{base_path}/sentence_bert_models/{embedding_type}_{triplet_type}_es"
         embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_{embedding_type}_{triplet_type}_es_sct_dict_{dataset}.npz"
         
@@ -192,44 +180,18 @@ def load_config(config_path : str):
 
     config_dic = {}
 
-    config_dic['execution_name'] = config_run.get('CONF', 'execution_name', fallback=None)
-    config_dic['span_dictionary_path'] = config_run.get('CONF', 'span_dictionary_path', fallback=None)
     config_dic['checkpoints_folder'] = config_run.get('CONF', 'checkpoints_folder', fallback='el_checkpoints')
 
     config_dic['disambiguate_abbreviations'] = config_run.getboolean('CONF', 'disambiguate_abbreviations')
-    config_dic['llm_for_el'] = config_run.getboolean('CONF', 'llm_for_el')
     config_dic['rephrase'] = config_run.getboolean('CONF', 'rephrase')
     config_dic['replace_span'] = config_run.getboolean('CONF', 'replace_span')
     config_dic['use_fsn'] = config_run.getboolean('CONF', 'use_fsn')
     config_dic['number_of_options'] = config_run.getint('CONF', 'number_of_options')
     config_dic['rerank_top_n'] = config_run.getint('CONF', 'rerank_top_n')
-    config_dic['trust_training'] = config_run.getboolean('CONF', 'trust_training', fallback=False)
     config_dic['use_reranker'] = config_run.getboolean('CONF', 'use_reranker')
-
-    config_dic['threshold_for_dictionary'] = None if not config_run.has_option('CONF', 'threshold_for_dictionary') or config_run['CONF']['threshold_for_dictionary'] == 'None' else config_run.getfloat('CONF', 'threshold_for_dictionary')
-    config_dic['threshold'] = None if config_run['CONF']['threshold'] == 'None' else config_run.getfloat('CONF', 'threshold')
 
     # CONFIGURATION FOR DICT OPTIONS
     config_dic['dictionary_options'] = {}
-
-    if config_run.has_section('OPTS'):
-        config_dic['dictionary_options']['method'] = config_run['OPTS']['method']
-        config_dic['dictionary_options']['use_new_span'] = config_run.getboolean('OPTS', 'use_new_span')
-        config_dic['dictionary_options']['use_both_spans_for_dict'] = config_run.getboolean('OPTS', 'use_both_spans_for_dict')
-        config_dic['dictionary_options']['use_synonyms'] = config_run.getboolean('OPTS', 'use_synonyms')
-        config_dic['dictionary_options']['use_new_span_for_llm'] = config_run.getboolean('OPTS', 'use_new_span_for_llm')
-        config_dic['dictionary_options']['use_new_span_for_validation_and_llm'] = config_run.getboolean('OPTS', 'use_new_span_for_validation_and_llm')
-        config_dic['dictionary_options']['trust_validation'] = config_run.getboolean('OPTS', 'trust_validation')
-        config_dic['dictionary_options']['rerank_validation'] = config_run.getboolean('OPTS', 'rerank_validation')
-        config_dic['dictionary_options']['top_concepts_embeddings'] = config_run.getint('OPTS', 'top_concepts_embeddings')
-        config_dic['dictionary_options']['top_validation_reranked'] = config_run.getint('OPTS', 'top_validation_reranked')
-        config_dic['dictionary_options']['preprocess_span'] = config_run.getboolean('OPTS', 'preprocess_span', fallback=False)
-        config_dic['dictionary_options']['preprocess_new_span'] = config_run.getboolean('OPTS', 'preprocess_new_span', fallback=False)
-
-    if config_run.has_option('CONF', 'threshold_for_reranker'):
-        config_dic['dictionary_options']['threshold_reranker'] = None if config_run['CONF']['threshold_for_reranker'] == 'None' else config_run.getfloat('CONF', 'threshold_for_reranker')
-    else:
-        config_dic['dictionary_options']['threshold_reranker'] = None
 
     if config_run.has_option('CONF', 'threshold_for_llm'):
         config_dic['dictionary_options']['threshold_llm'] = None if config_run['CONF']['threshold_for_llm'] == 'None' else config_run.getfloat('CONF', 'threshold_for_llm')
