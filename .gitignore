@@ -5,4 +5,8 @@ src/config_files/config_run_old.cfg
 __pycache__/
 src/evaluate_all.py
 src/merge_checkpoints.py
+src/generate_hits_tables.py
+src/generate_hits_tables_selected.py
+src/evaluate_snomed_external.py
 *_combined.csv
+results/

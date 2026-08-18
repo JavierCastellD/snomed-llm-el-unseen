@@ -8,7 +8,7 @@ from sentence_transformers.cross_encoder import CrossEncoder
 
 from python_libraries.embedding_models.embedding_model import load_embeddings
 from python_libraries.embedding_models.sentencetransformer_EM import SentenceTransformerEM
-from python_libraries.entity_linker import EntityLinkerLLMDictionary
+from python_libraries.entity_linker import EntityLinkerAdaptiveLLM
 from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC_IV_dataset
 from python_libraries.llm_queries import LLMQueryHelperOpenAI, OllamaQueryHelper
 from python_libraries.reranker import Reranker
@@ -24,8 +24,6 @@ triplet_type = sys.argv[3]
 
 config_dic, config = load_config(config_run_file)
 
-span_dictionary_path = config_dic['span_dictionary_path']
-
 disambiguate_abbreviations = config_dic['disambiguate_abbreviations']
 llm_for_el = config_dic['llm_for_el']
 rephrase = config_dic['rephrase']
@@ -33,10 +31,8 @@ replace_span = config_dic['replace_span']
 use_fsn = config_dic['use_fsn']
 number_of_options = config_dic['number_of_options']
 rerank_top_n = config_dic['rerank_top_n']
-trust_training = config_dic['trust_training']
 use_reranker = config_dic['use_reranker']
 
-threshold_for_dictionary = config_dic['threshold_for_dictionary']
 threshold = config_dic['threshold']
 
 # CONFIGURATION FOR DICT OPTIONS
@@ -121,11 +117,7 @@ cross_encoder = CrossEncoder(os.path.join(BASE_DIR, 'cross-encoder', f'cef_{mode
 # Create the Reranker
 reranker = Reranker(cross_encoder)
 
-# Load the span dictionary
-with open(span_dictionary_path, "r") as dict_file:
-    span_dictionary = json.load(dict_file)
-
-ner_type2hierarchy = {'Body structure' : 'Body structure', 
+ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Clinical finding' : 'Clinical finding', 
                       'Procedure' : 'Procedure'}
 
@@ -133,22 +125,15 @@ ner_type2hierarchy = {'Body structure' : 'Body structure',
 #NOTES_FOLDER_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic_notes_test/')
 NOTES_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic-iv_notes_test_set.csv')
 ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge_UM_UC_combined.csv')
-ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'train_annotations.csv')
 
 # Load the notes and annotations
 mimic = MIMIC_IV_dataset(annotation_csv_path=ANNOTATIONS_CSV_PATH, notes_csv_path=NOTES_CSV_PATH)
 
-# Load training concepts
-anns_train = pd.read_csv(ANNOTATIONS_TRAIN_CSV_PATH)
-
-training_concepts = list(anns_train['concept_id'].unique())
-
 # Load the Entity Linker
-entity_linker = EntityLinkerLLMDictionary(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker, span_dictionary=span_dictionary,
-                                          dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el, 
-                                          rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options = number_of_options, rerank_top_n = rerank_top_n, 
-                                          trust_training=trust_training, use_reranker=use_reranker, threshold_for_dictionary=threshold_for_dictionary, threshold=threshold,
-                                          ner_type2hierarchy=ner_type2hierarchy, training_concepts=training_concepts)
+entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
+                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el,
+                                        rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
+                                        threshold=threshold, ner_type2hierarchy=ner_type2hierarchy)
 
 # Load the Snomed Pipe
 snomed_pipe = SnomedPipe(entity_linker)
@@ -158,7 +143,7 @@ test_df = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'mimic-iv_notes_test_
 
 # Iterate through texts
 for note_id in tqdm(test_df['note_id']):
-    print(f'Current note_id: {note_id}')
+    print(f'Current note_id: {note_id}', flush=True)
 
     # Obtain the text
     text = mimic.get_note_text(note_id)

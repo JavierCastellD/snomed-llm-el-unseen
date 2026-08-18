@@ -8,7 +8,7 @@ from sentence_transformers.cross_encoder import CrossEncoder
 
 from python_libraries.embedding_models.embedding_model import load_embeddings
 from python_libraries.embedding_models.sentencetransformer_EM import SentenceTransformerEM
-from python_libraries.entity_linker import EntityLinkerLLMDictionary
+from python_libraries.entity_linker import EntityLinkerAdaptiveLLM
 from python_libraries.annotated_datasets.TEMIST_dataset import TEMIST_dataset
 from python_libraries.llm_queries import LLMQueryHelperOpenAI, OllamaQueryHelper
 from python_libraries.reranker import Reranker
@@ -29,8 +29,6 @@ else:
 
 config_dic, config = load_config(config_run_file)
 
-span_dictionary_path = config_dic['span_dictionary_path']
-
 disambiguate_abbreviations = config_dic['disambiguate_abbreviations']
 llm_for_el = config_dic['llm_for_el']
 rephrase = config_dic['rephrase']
@@ -38,10 +36,8 @@ replace_span = config_dic['replace_span']
 use_fsn = config_dic['use_fsn']
 number_of_options = config_dic['number_of_options']
 rerank_top_n = config_dic['rerank_top_n']
-trust_training = config_dic['trust_training']
 use_reranker = config_dic['use_reranker']
 
-threshold_for_dictionary = config_dic['threshold_for_dictionary']
 threshold = config_dic['threshold']
 
 # CONFIGURATION FOR DICT OPTIONS
@@ -119,11 +115,7 @@ cross_encoder = CrossEncoder(CROSS_ENCODER)
 # Create the Reranker
 reranker = Reranker(cross_encoder)
 
-# Load the span dictionary
-with open(span_dictionary_path, "r") as dict_file:
-    span_dictionary = json.load(dict_file)
-
-ner_type2hierarchy = {'Body structure' : 'Body structure', 
+ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Clinical finding' : 'Clinical finding', 
                       'Procedure' : 'Procedure'}
 
@@ -142,11 +134,10 @@ temist = TEMIST_dataset(notes_folder_path=NOTES_FOLDER_PATH, annotations_tsv_pat
                         ignore_combined=True, ignore_no_code=True)
 
 # Load the Entity Linker
-entity_linker = EntityLinkerLLMDictionary(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker, span_dictionary=span_dictionary,
-                                          dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el, 
-                                          rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options = number_of_options, rerank_top_n = rerank_top_n, 
-                                          trust_training=trust_training, use_reranker=use_reranker, threshold_for_dictionary=threshold_for_dictionary, threshold=threshold,
-                                          ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
+entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
+                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el,
+                                        rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
+                                        threshold=threshold, ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
 
 # Load the Snomed Pipe
 snomed_pipe = SnomedPipe(entity_linker)
@@ -154,7 +145,7 @@ snomed_pipe = SnomedPipe(entity_linker)
 saved_notes = 0
 # Iterate through texts
 for note_id in temist.get_note_ids():#tqdm(temist.get_note_ids()):
-    print(f'Current note_id: {note_id}')
+    print(f'Current note_id: {note_id}', flush=True)
 
     # Obtain the text
     text = temist.get_note_text(note_id)

@@ -12,13 +12,7 @@ def load_model_paths_es(embedding_type : str, triplet_type : str, dataset : str,
     """Loads the paths for the embedding model, the embedding dictionary, the cross-encoder, and the id2name dictionary, 
     according to the given embedding type, triplet configuration, and dataset."""
     embedding_info = {}
-    if embedding_type == "sapbert":
-        embedding_info['emb_model_path'] = "cambridgeltl/SapBERT-from-PubMedBERT-fulltext-mean-token" 
-        embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_sapbert_mean_base_sct_dict_{dataset}.npz"
-
-        embedding_info['cross_encoder_path'] = f"{base_path}/cross-encoder/ce_50_{dataset}_sapbert"
-        embedding_info['id2name_path'] = f"{base_path}/snomed_dictionaries/id2name_desc_ent_sct_dict_{dataset}.json"
-    elif embedding_type == "sapbert_esp":
+    if embedding_type == "sapbert_esp":
         embedding_info['emb_model_path'] = "BSC-NLP4BIA/SapBERT-from-roberta-base-biomedical-clinical-es"
         embedding_info['emb_dic_path'] = f"{base_path}/snomed_dictionaries/desc_ent_all_sapbert_roberta_es_sct_dict_{dataset}.npz"
         
