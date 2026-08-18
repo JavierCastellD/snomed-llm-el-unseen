@@ -6,14 +6,14 @@ import pandas as pd
 from python_libraries.snomed import Snomed
 from python_libraries.utils import load_temist_files, get_prediction_results
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 # Load names
 dataset= sys.argv[1]
 predictions_path = sys.argv[2]
 
 # Load the TEMIST predictions
-train_set, test_set, gaz = load_temist_files(dataset=dataset, base_path="..", use_temist_naming=False)
+train_set, test_set, gaz = load_temist_files(dataset=dataset, base_path=BASE_DIR, use_temist_naming=False)
 
 # Load Fernando's UC and UM
 df_um = pd.read_csv(os.path.join(BASE_DIR, 'temist', f'{dataset}', 'df_um.tsv'), sep='\t')

@@ -1,4 +1,3 @@
-import configparser
 import json
 import os
 import sys
@@ -9,9 +8,9 @@ from sentence_transformers.cross_encoder import CrossEncoder
 
 from python_libraries.embedding_models.embedding_model import load_embeddings
 from python_libraries.embedding_models.sentencetransformer_EM import SentenceTransformerEM
-from python_libraries.entity_linker import EntityLinkerLLMDictionary
+from python_libraries.entity_linker import EntityLinkerAdaptiveLLM
 from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC_IV_dataset
-from python_libraries.llm_queries import LLMQueryHelperOpenAI
+from python_libraries.llm_queries import LLMQueryHelperOpenAI, OllamaQueryHelper
 from python_libraries.reranker import Reranker
 from python_libraries.snomed import Snomed, SnomedEmbedder, SnomedPipe
 from python_libraries.utils import load_config, annotations_to_df, concatenate_annotations
@@ -23,42 +22,40 @@ config_run_file = sys.argv[1]
 model_name = sys.argv[2]
 triplet_type = sys.argv[3]
 
-config_dic = load_config(config_run_file)
-
-EXECUTION_NAME = model_name + '_' + triplet_type + '_' + config_dic['execution_name']
-span_dictionary_path = config_dic['span_dictionary_path']
+config_dic, config = load_config(config_run_file)
 
 disambiguate_abbreviations = config_dic['disambiguate_abbreviations']
-llm_for_el = config_dic['llm_for_el']
 rephrase = config_dic['rephrase']
 replace_span = config_dic['replace_span']
 use_fsn = config_dic['use_fsn']
 number_of_options = config_dic['number_of_options']
 rerank_top_n = config_dic['rerank_top_n']
-trust_training = config_dic['trust_training']
 use_reranker = config_dic['use_reranker']
-
-threshold_for_dictionary = config_dic['threshold_for_dictionary']
-threshold = config_dic['threshold']
 
 # CONFIGURATION FOR DICT OPTIONS
 dictionary_options = config_dic['dictionary_options']
 
+# LLM settings (read from the same ConfigParser object returned by load_config)
+
+LLM_BACKEND    = os.environ.get('LLM_BACKEND',     config['LLM']['backend'])
+LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', config['LLM']['model_name'])
+LLM_TEMPERATURE = float(os.environ.get('LLM_TEMPERATURE', config['LLM']['temperature']))
+
+_llm_name = LLM_MODEL_NAME.replace(':', '-')
+_parts = ['snomed', model_name, triplet_type]
+if use_reranker:
+    _parts.append('rer')
+if disambiguate_abbreviations:
+    _parts.append('abv')
+_parts += [str(rerank_top_n), str(number_of_options), _llm_name]
+EXECUTION_NAME = '_'.join(_parts)
+
 # Files for the checkpoints
-DIRECTORY_PATH = os.path.join(BASE_DIR, 'el_checkpoints', EXECUTION_NAME + '_checkpoints')
+CHECKPOINTS_FOLDER = config_dic['checkpoints_folder']
+DIRECTORY_PATH = os.path.join(BASE_DIR, CHECKPOINTS_FOLDER, EXECUTION_NAME + '_checkpoints')
 
 if not os.path.exists(DIRECTORY_PATH):
     os.makedirs(DIRECTORY_PATH)
-
-# LLM files
-CONFIG_FILE = os.path.join(BASE_DIR, "src", "config_files", "config_llm.cfg")
-
-config = configparser.ConfigParser()
-config.read(CONFIG_FILE)
-
-#ENDPOINT = config['AZURE']['endpoint']
-ENDPOINT = config['AZURE']['endpoint_openai']
-API_KEY = config['AZURE']['apikey']
 
 # SNOMED CT files
 SNOMED_VERSION = "20230531"
@@ -103,7 +100,13 @@ snomed_embedder = SnomedEmbedder(snomed=snomed, embedding_model=embedding_model,
                                  dictionary_descriptions=DICTIONARY_DESCRIPTIONS)
 
 # Load the LLM query helper
-llm_query_helper = LLMQueryHelperOpenAI(API_KEY, ENDPOINT, model_name='gpt-5-mini', temperature=1)
+if LLM_BACKEND == 'ollama':
+    llm_query_helper = OllamaQueryHelper(model_name=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE,
+                                         host=config['OLLAMA']['host'])
+else:
+    llm_query_helper = LLMQueryHelperOpenAI(api_key=config['AZURE']['apikey'],
+                                            endpoint=config['AZURE']['endpoint_openai'],
+                                            model_name=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE)
 
 # Load the CrossEncoder
 cross_encoder = CrossEncoder(os.path.join(BASE_DIR, 'cross-encoder', f'cef_{model_name}_{triplet_type}_en_snomed_sim_cand_200_epoch_1_bs_128'))
@@ -111,34 +114,23 @@ cross_encoder = CrossEncoder(os.path.join(BASE_DIR, 'cross-encoder', f'cef_{mode
 # Create the Reranker
 reranker = Reranker(cross_encoder)
 
-# Load the span dictionary
-with open(span_dictionary_path, "r") as dict_file:
-    span_dictionary = json.load(dict_file)
-
-ner_type2hierarchy = {'Body structure' : 'Body structure', 
+ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Clinical finding' : 'Clinical finding', 
                       'Procedure' : 'Procedure'}
 
 # Load the text files
 #NOTES_FOLDER_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic_notes_test/')
 NOTES_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'mimic-iv_notes_test_set.csv')
-ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv')
-ANNOTATIONS_TRAIN_CSV_PATH = os.path.join(BASE_DIR, 'mimic_data', 'train_annotations.csv')
+ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge_UM_UC_combined.csv')
 
 # Load the notes and annotations
-mimic = MIMIC_IV_dataset(notes_csv_path=NOTES_CSV_PATH, annotations_csv_path=ANNOTATIONS_CSV_PATH)
-
-# Load training concepts
-anns_train = pd.read_csv(ANNOTATIONS_TRAIN_CSV_PATH)
-
-training_concepts = list(anns_train['concept_id'].unique())
+mimic = MIMIC_IV_dataset(annotation_csv_path=ANNOTATIONS_CSV_PATH, notes_csv_path=NOTES_CSV_PATH)
 
 # Load the Entity Linker
-entity_linker = EntityLinkerLLMDictionary(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker, span_dictionary=span_dictionary,
-                                          dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations, llm_for_el=llm_for_el, 
-                                          rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options = number_of_options, rerank_top_n = rerank_top_n, 
-                                          trust_training=trust_training, use_reranker=use_reranker, threshold_for_dictionary=threshold_for_dictionary, threshold=threshold,
-                                          ner_type2hierarchy=ner_type2hierarchy, training_concepts=training_concepts)
+entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
+                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations,
+                                        rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
+                                        ner_type2hierarchy=ner_type2hierarchy)
 
 # Load the Snomed Pipe
 snomed_pipe = SnomedPipe(entity_linker)
@@ -148,7 +140,7 @@ test_df = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'mimic-iv_notes_test_
 
 # Iterate through texts
 for note_id in tqdm(test_df['note_id']):
-    print(f'Current note_id: {note_id}')
+    print(f'Current note_id: {note_id}', flush=True)
 
     # Obtain the text
     text = mimic.get_note_text(note_id)
@@ -171,16 +163,12 @@ for note_id in tqdm(test_df['note_id']):
         predicted_entities = snomed_pipe.link_entities_given_spans(text, sentences)
         df = annotations_to_df(note_id, predicted_entities, {'label' : 'concept_id', 'start' : 'start', 'end' : 'end'},  add_options=True, add_confidence=True, add_other=True)
         df.to_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_{note_id}.csv'), index=False)
+        llm_query_helper.save_cache()
+
+llm_query_helper.save_cache()
 
 # Save the predictions to a single csv
 concatenated_df = concatenate_annotations(folder_path=DIRECTORY_PATH)
-
-# Fix wrong start, end - do not know why
-diff_mask_start = (concatenated_df[['start']] != test_df[['start']]).any(axis=1)
-concatenated_df.loc[diff_mask_start, 'start'] = test_df[diff_mask_start]['start']
-diff_mask_end = (concatenated_df[['end']] != test_df[['end']]).any(axis=1)
-concatenated_df.loc[diff_mask_end, 'end'] = test_df[diff_mask_end]['end']
-
 concatenated_df.to_csv(os.path.join(DIRECTORY_PATH, f'{EXECUTION_NAME}_predictions.csv'), index=False)
     
 llm_query_helper.save_cache()

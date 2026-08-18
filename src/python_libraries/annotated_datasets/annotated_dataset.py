@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from ..ner_model.sentence_ner import Sentence
+from ..sentence_ner import Sentence
 
 NOT_RELEVANT_CHARACTERS = [' ', '\n']
 

@@ -59,6 +59,28 @@ The arguments for the script are <model_name>, which is the name of the bi-encod
 > [!NOTE]
 > This script and the others are prepared considering that all embedding related files follow certain naming conventions. More information about that or how to change them can be read in their corresponding folders: embeddings dictionaries in the folder [snomed_dictionaries](snomed_dictionaries/README.md), bi-encoders in the [sentence_bert_models](sentence_bert_models/README.md) folder, and about cross-encoders in [cross-encoder](cross-encoder/README.md).
 
+## Running with a local open-source model (Ollama)
+
+The pipeline supports local open-source models served through [Ollama](https://ollama.com) as a drop-in replacement for Azure OpenAI. To switch backends:
+
+1. Install and start Ollama, then pull your chosen model:
+   ```
+   ollama pull llama3.1:8b
+   ```
+
+2. Edit your `config_run.cfg` — set `backend = ollama` and update `model_name` in the `[LLM]` section (see [example](src/config_files/config_run.cfg)):
+   ```ini
+   [LLM]
+   backend = ollama
+   model_name = llama3.1:8b
+   temperature = 1.0
+
+   [OLLAMA]
+   host = http://localhost:11434
+   ```
+
+3. Run `predict_snomed.py` or `predict_temist.py` as usual — no other changes needed. To switch back to Azure, set `backend = azure`.
+
 ## Obtain predictions for the datasets
 
 ### Predictions for SNOMED CT Entity Linking Challenge
@@ -69,14 +91,14 @@ To obtain the predictions for the SNOMED CT Entity Linking Challenge you need:
 - A cross-encoder in *cross-encoder/*.
 - SNOMED CT files in *snomed_data/*.
 - The SNOMED CT Entity Linking Challenge dataset (MIMIC-IV annotations and notes) in *mimic_data/*.
-- Config files in *src/config_files/*: one with the API_KEY and ENDPOINT for Azure, and another one with the parameters for the pipeline (see [example](src/config_files/config_run.cfg)).
+- A config file in *src/config_files/*: with both the pipeline parameters and the LLM backend settings (see [example](src/config_files/config_run.cfg)).
 
 To obtain the predictions, run the following script:
 ```
 python predict_snomed.py <path_to_config_run_parameters> <model_name> <triplet_type>
 ```
 
-This generates a file with all the predictions and a file with predictions per clinical note in the folder *el_checkpoints/* according to the *execution_name* from the configuration file. 
+This generates a file with all the predictions and a file with predictions per clinical note in the checkpoints folder set by `checkpoints_folder` in the configuration file (defaults to *el_checkpoints/*), inside a subfolder named after the auto-generated execution name.
 
 Using the file with all the predictions, you can obtain the accuracy results per pipeline stage and per subdataset (*unseen mentions* and *unseen codes*) using the following script:
 ```
@@ -91,7 +113,7 @@ To obtain the predictions for DisTEMIST, SympTEMIST, and MedProcNER you need:
 - A cross-encoder in *cross-encoder/*.
 - International and Spanish SNOMED CT files in *snomed_data/*.
 - The corresponding dataset folder in *temist/* with its name in lowercase.
-- Config files in *src/config_files/*: one with the API_KEY and ENDPOINT for Azure, and another one with the parameters for the pipeline (see [example](src/config_files/config_run.cfg)).
+- A config file in *src/config_files/*: with both the pipeline parameters and the LLM backend settings (see [example](src/config_files/config_run.cfg)).
 
 To obtain the predictions, run the following script:
 ```

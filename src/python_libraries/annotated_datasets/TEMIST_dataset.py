@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import re
 import warnings
@@ -67,13 +68,16 @@ class TEMIST_dataset(AnnotatedDataset):
         if dataset_type == 'distemist':
             tsv_map = {'off0' : 'start',
                        'off1' : 'end',
-                       'span' : 'text'}
+                       'span' : 'text',
+                       'term' : 'text'}
         elif dataset_type == 'symptemist':
             tsv_map = {'span_ini' : 'start',
-                       'span_end' : 'end'}
+                       'span_end' : 'end',
+                       'term' : 'text'}
         elif dataset_type == 'medprocner':
             tsv_map = {'start_span' : 'start',
-                       'end_span' : 'end'}
+                       'end_span' : 'end',
+                       'term' : 'text'}
         else:
             raise ValueError(
                 f"Invalid dataset_type '{dataset_type}'. "
@@ -97,7 +101,7 @@ class TEMIST_dataset(AnnotatedDataset):
                 current_note_id = note_id
 
                 # Load the note
-                note_path = notes_folder_path + current_note_id + '.txt'
+                note_path = os.path.join(notes_folder_path, current_note_id + '.txt')
                 with open(note_path, 'r', encoding='utf-8') as text_file:
                     text = text_file.read()
 
@@ -105,16 +109,16 @@ class TEMIST_dataset(AnnotatedDataset):
                         self.annotations[current_note_id] = {'text' : text, 'annotations' : []}
 
             # Crete the annotation entry and add it to the dictionary
-            codes = [row['code']]
+            codes = [str(row['code'])]
 
-            if ignore_no_code and row['code'] == 'NO_CODE':
+            if ignore_no_code and str(row['code']) == 'NO_CODE':
                 continue
-            
-            if '+' in row['code']:
+
+            if '+' in str(row['code']):
                 if ignore_combined:
                     continue
                 else:
-                    codes = row['code'].split('+')
+                    codes = str(row['code']).split('+')
             for code in codes:
                 self.annotations[current_note_id]['annotations'].append({'start' : row['start'],
                                                                         'end' : row['end'],

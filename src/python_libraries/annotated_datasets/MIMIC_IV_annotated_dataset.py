@@ -15,13 +15,12 @@ NOT_RELEVANT_CHARACTERS = [' ', '\n']
 # Functions for extracting the sections
 def find_annotations_per_section(text_sections : dict[str], annotations : list[dict]) -> dict[str]:
     """Function that given a dictionary composed of text sections and a list of annotations,
-    returns to which sections of the text corresponds each annotation. This method assumes that
-    the annotations are ordered by order of aparition in the text.
-    
+    returns to which sections of the text corresponds each annotation.
+
     Parameters:
         text_sections (dict):
             Dictionary that stores text sections. Each key corresponds to a section's name. Each value
-            is a dictionary with at least the keys: start, end, span_start, and text; where start and end 
+            is a dictionary with at least the keys: start, end, span_start, and text; where start and end
             denote the limits of the section in text, span_start takes into account the heading; and text
             is the corresponding text for the section.
 
@@ -32,29 +31,14 @@ def find_annotations_per_section(text_sections : dict[str], annotations : list[d
         A modified version of text_sections, where a new key has been assigned called 'annotations', which
         stores the list of annotations that appear in each section.
     """
-    annotated_text_sections = {}
-
-    current_section_index = 0
-    current_section = SECTIONS[current_section_index]
-
-    annotated_text_sections[current_section] = text_sections[current_section]
-    annotated_text_sections[current_section]['annotations'] = []
+    annotated_text_sections = {name: {**data, 'annotations': []} for name, data in text_sections.items()}
 
     for annotation in annotations:
-        while(text_sections[current_section]['end'] < annotation['end']):
-            # Advance to the next section
-            current_section_index += 1
-            current_section = SECTIONS[current_section_index]
-
-            while(current_section not in text_sections):
-                current_section_index += 1
-                current_section = SECTIONS[current_section_index]
-
-            annotated_text_sections[current_section] = text_sections[current_section]
-            annotated_text_sections[current_section]['annotations'] = []
-        
-        if annotation['start'] >= text_sections[current_section]['span_start'] and annotation['end'] <= text_sections[current_section]['end']:
-            annotated_text_sections[current_section]['annotations'].append(annotation)
+        for section_name, section_data in text_sections.items():
+            if (annotation['start'] >= section_data['span_start'] and
+                    annotation['end'] <= section_data['end']):
+                annotated_text_sections[section_name]['annotations'].append(annotation)
+                break
         else:
             print('Error aligning annotations')
 
@@ -372,20 +356,30 @@ def segment_text_into_sentences(section : str, text : str, all_text : str, old_v
         anonymized_heading = find_anonymized_heading(all_text, section)
         section = anonymized_heading if anonymized_heading is not None else section
 
+    # The heading is synthetic (not part of the section body text), so its offset is not meaningful
     if transform:
         sentences_processed.append(Sentence(text=section + ':', section=section))
     else:
-        sentences_processed.append(section + ':')
+        sentences_processed.append((section + ':', None, None))
 
+    # Sequentially locate each preprocessed sentence within the raw section body text, so its
+    # true raw extent can be carried forward and used to precisely relocate each entity within it,
+    # instead of re-deriving positions later via a fuzzy whole-document search
+    search_pos = 0
     for sentence in sentences:
         # Preprocess sentence
         sentence = preprocess_sentence(sentence)
 
         if len(sentence) > 0:
+            match = find_sentence_offset(text, sentence, search_pos)
+            local_start, local_end = match if match is not None else (None, None)
+            if local_end is not None:
+                search_pos = local_end
+
             if transform:
                 sentences_processed.append(Sentence(text=sentence, section=section))
             else:
-                sentences_processed.append(sentence)
+                sentences_processed.append((sentence, local_start, local_end))
 
     return sentences_processed
 
@@ -411,31 +405,81 @@ def preprocess_sentence(sentence : str) -> str:
 
     return sentence
 
-# Functions for fixing annotation indexes
-def fix_annotations_per_sentence(sentences : list[str], annotations : list[dict], transform : bool = False, section : str = None, adapt_indexes : bool = True) -> list[dict]|list[Sentence]:
-    """Function that links to which sentence corresponds each annotation. It assumes
-    that annotations are ordered by order of apparition in text. 
-    
+def find_sentence_offset(section_text : str, sentence : str, start_pos : int = 0) -> tuple[int, int]|None:
+    """Locates the true start and end offsets of a preprocessed sentence (or span) within the raw,
+    unpreprocessed section text. Since preprocess_sentence only collapses whitespace (newlines and
+    runs of spaces into a single space) and strips the ends, the search tolerates any whitespace in
+    section_text where the sentence has a single space, while matching every other character
+    literally.
+
     Parameters:
-        sentences (list):
-            List of sentences represented by strings.
+        section_text (str):
+            Raw section body text (before whitespace preprocessing) to search within.
+        sentence (str):
+            Preprocessed sentence or span text to locate.
+        start_pos (int):
+            Position in section_text from which to start searching. Used to search sequentially
+            and avoid matching an earlier, unrelated occurrence of the same text.
+
+    Returns:
+        A (start, end) tuple of indices within section_text, or None if it could not be found.
+    """
+    # Some segmenters (e.g. segment_pertinent_results) can append a trailing dot that is not
+    # actually present in the original text, when the sentence already ended with one. Literal
+    # dots are treated as optional to tolerate this, mirroring the "artificial dot" heuristic
+    # that the legacy whole-document remap used for the same reason.
+    parts = sentence.split(' ')
+    escaped_parts = [re.escape(part).replace(r'\.', r'\.?') for part in parts]
+    pattern = r'\s+'.join(escaped_parts)
+
+    match = re.search(pattern, section_text[start_pos:])
+
+    if match is None:
+        return None
+
+    return start_pos + match.start(), start_pos + match.end()
+
+# Functions for fixing annotation indexes
+def fix_annotations_per_sentence(sentences : list[tuple[str, int, int]], annotations : list[dict], transform : bool = False, section : str = None, adapt_indexes : bool = True, section_start : int = None) -> list[dict]|list[Sentence]:
+    """Function that links to which sentence corresponds each annotation. It assumes
+    that annotations are ordered by order of apparition in text.
+
+    Parameters:
+        sentences (list[tuple[str, int, int]]):
+            List of (sentence_text, local_start, local_end) tuples, where local_start/local_end
+            denote the sentence's raw extent within the section's raw body text (or None if it
+            could not be located).
         annotations (list):
             List of annotations, where each annotation is represented by a dictionary with
-            the keys: start, end, span, and label.
+            the keys: start, end, span, and label. start/end are the annotation's true position in
+            the original document text - this is given-span entity linking, so spans are never
+            predicted, only the concept; these positions are carried straight through to
+            true_start/true_end without any text search, since they are exact by construction
+            (this dataset's span text is itself derived from text[start:end], not the reverse).
         transform (bool):
             Whether to transform the output into a list of Sentence.
         section (str):
-            String that denotes the section of the sentences. 
+            String that denotes the section of the sentences.
         adapt_indexes (bool):
             Whether to adapt the start and end index of each annotation to each sentence or maintain the original ones, which are relative to the whole text.
-            
+        section_start (int):
+            True start offset of the section within the original document text. Combined with each
+            sentence's local extent to compute Sentence.original_start, used only as a fallback for
+            callers whose entities don't originate from a gold annotation with a known true
+            position. None if unknown.
+
     Returns:
         list: A list of dictionaries, where each dictionary has two keys: sentence, and annotations. If transform is set to True, a list of Sentence
         objects is returned instead.
     """
+    def make_entry(idx : int) -> dict:
+        text, local_start, local_end = sentences[idx]
+        original_start = section_start + local_start if (section_start is not None and local_start is not None) else None
+        return {'sentence' : text, 'annotations' : [], 'original_start' : original_start}
+
     sentences_annotated = []
 
-    current = {'sentence' : sentences[0], 'annotations' : []}
+    current = make_entry(0)
     sent_index = 0
     char_index = 0
 
@@ -457,7 +501,7 @@ def fix_annotations_per_sentence(sentences : list[str], annotations : list[dict]
                     # If the annotation might be split, we check if at least
                     # the initial part is in current sentence
                     annotation_split = annotation_fix.split(' ')
-                    
+
                     # Particular case of a dot as part of the first split
                     if '.' in annotation_split[0]:
                         #print('Done for', annotation_fix)
@@ -467,7 +511,7 @@ def fix_annotations_per_sentence(sentences : list[str], annotations : list[dict]
                         aux += annotation_split[1:]
 
                         annotation_split = aux
-                    
+
                     if current['sentence'][char_index:].find(annotation_split[0]) != -1:
 
                         # If the initial part of the annotation is in the split
@@ -482,35 +526,40 @@ def fix_annotations_per_sentence(sentences : list[str], annotations : list[dict]
                             i += 1
 
                             # Add the text of the next sentence
-                            search_sentence += ' ' + sentences[sent_index + i]
+                            search_sentence += ' ' + sentences[sent_index + i][0]
 
                             start = search_sentence[char_index:].find(annotation_fix)
 
-                        # If we found the group of sentences we need to update the 
+                        # If we found the group of sentences we need to update the
                         # text of the current sentence and increment the index of the sentences
+                        # (original_start/local_start stay anchored to the first merged piece,
+                        # local_end is extended to cover the last merged piece)
                         if start != -1:
                             #print('MERGE!')
                             current['sentence'] = search_sentence
                             sent_index += i
-                
+
                 # At this point, if we have not yet found it
                 # we need to change the sentence
                 if start == -1:
                     sentences_annotated.append(current)
 
-                    # As long as there are annotations, there should be 
+                    # As long as there are annotations, there should be
                     # sentences
                     sent_index += 1
                     char_index = 0
-                    current = {'sentence' : sentences[sent_index], 'annotations' : []}
-        
+                    current = make_entry(sent_index)
 
-        # We have found the correct sentence
+
+        # We have found the correct sentence. annotation['start']/['end'] are the annotation's
+        # true position in the original document, given to us directly - no search needed.
         end = start + char_index + len(annotation_fix)
         current['annotations'].append({'start' : start + char_index if adapt_indexes else annotation['start'],
                                        'end' : end if adapt_indexes else annotation['end'],
                                        'span' : annotation_fix,
-                                       'label' : annotation['label']})
+                                       'label' : annotation['label'],
+                                       'true_start' : annotation['start'],
+                                       'true_end' : annotation['end']})
         char_index = end
 
     # Add the current sentence
@@ -520,8 +569,7 @@ def fix_annotations_per_sentence(sentences : list[str], annotations : list[dict]
     # Add the remaining sentences, that do not have annotations
     # (if there are any)
     while(sent_index < len(sentences)):
-        sentences_annotated.append({'sentence' : sentences[sent_index], 
-                                    'annotations' : []})
+        sentences_annotated.append(make_entry(sent_index))
         sent_index += 1
 
     # If transform is set to True, we transform the sentences to the Sentence class
@@ -530,13 +578,18 @@ def fix_annotations_per_sentence(sentences : list[str], annotations : list[dict]
                           'start' : 'start',
                           'end' : 'end',
                           'label' : 'label'}
-        
+
         sentences_transformed = []
         for sentence in sentences_annotated:
-            entities = [Entity.from_dictionary(annotation, map_dictionary) for annotation in sentence['annotations']]
-            sentence = Sentence(sentence['sentence'], section, entities)
-            sentences_transformed.append(sentence)
-        
+            entities = []
+            for annotation in sentence['annotations']:
+                entity = Entity.from_dictionary(annotation, map_dictionary)
+                entity.other['true_start'] = annotation['true_start']
+                entity.other['true_end'] = annotation['true_end']
+                entities.append(entity)
+            sentence_obj = Sentence(sentence['sentence'], section, entities, original_start=sentence['original_start'])
+            sentences_transformed.append(sentence_obj)
+
         return sentences_transformed
     return sentences_annotated
 
@@ -549,19 +602,22 @@ class MIMIC_IV_dataset(AnnotatedDataset):
         annotations (dict):
             Dictionary that stores, for each note_id, its corresponding annotations and text.
     """
-    def __init__(self, notes_folder_path : str, notes_csv_path : str, annotation_csv_path : str) -> None:
+    def __init__(self, annotation_csv_path : str, notes_folder_path : str = None, notes_csv_path : str = None) -> None:
         """Loads the notes and annotations into the class. It needs the path to the CSV with the annotations,
         and either the path to the folder with the notes or the path to a CSV that contains the notes.
         
         Parameters:
+            annotation_csv_path (str):
+                Path to the annotation CSV file. Only the notes whose ids are found
+                in the CSV will be loaded into the class.
             notes_folder_path (str):
                 Path to the folder where the notes are found.
             notes_csv_path (str):
                 Path to the CSV file containing the notes.
-            annotation_csv_path (str):
-                Path to the annotation CSV file. Only the notes whose ids are found
-                in the CSV will be loaded into the class.
         """
+        if notes_folder_path is None and notes_csv_path is None:
+            raise ValueError('At least one of notes_folder_path and notes_csv_path must be provided')
+
         # Read the DF with the annotations
         annotations_df = pd.read_csv(annotation_csv_path)
 
@@ -590,14 +646,19 @@ class MIMIC_IV_dataset(AnnotatedDataset):
                     with open(note_path, 'r', encoding='utf-8') as text_file:
                         text = text_file.read()
 
-                self.annotations[current_note_id] = {'text' : text, 'annotations' : []}
+                if current_note_id not in self.annotations:
+                    self.annotations[current_note_id] = {'text' : text, 'annotations' : []}
 
             # Crete the annotation entry and add it to the dictionary
             self.annotations[current_note_id]['annotations'].append({'start' : row['start'],
                                                                      'end' : row['end'],
                                                                      'label' : str(row['concept_id']),
                                                                      'span' : text[row['start']:row['end']]})
-            
+
+        # Sort annotations by end position as required by find_annotations_per_section
+        for note in self.annotations.values():
+            note['annotations'].sort(key=lambda x: x['end'])
+
     def get_note_text(self, note_id : str) -> str:
         """Method that returns the text of a note by their note_id.
         
@@ -669,8 +730,32 @@ class MIMIC_IV_dataset(AnnotatedDataset):
             anonymized = text_sections[section]['anonymized']
 
             sentences = segment_text_into_sentences(section, annotated_text_sections[section]['text'], all_text=text, anonymized=anonymized)
-            
-            sentences_annotations += fix_annotations_per_sentence(sentences, annotated_text_sections[section]['annotations'], transform=transform, section=section, adapt_indexes=adapt_annotation_index)
+
+            sentences_annotations += fix_annotations_per_sentence(sentences, annotated_text_sections[section]['annotations'], transform=transform, section=section, adapt_indexes=adapt_annotation_index, section_start=text_sections[section]['start'])
 
         return sentences_annotations
-            
+    
+    def get_annotated_text_sections_from_note(self, note_id : str) -> dict[str]:
+        """Method that returns the sections and annotations for a given text from MIMIC. The sections are returned as a dictionary where each key is a section name and each value is another dictionary with information about the section, such
+        as the text, annotations, or its start and end positions.
+        
+        Parameters:
+            note_id (str):
+                String that represents the identifier of the note.
+
+        Returns:
+            A dictionary where each key is a section name and each value is another dictionary with the following keys: text, annotations, start, end, and span_start.
+        """
+        # Obtain current text
+        text = self.get_note_text(note_id)
+
+        # Obtain the annotations
+        annotations = self.get_note_annotations(note_id)
+
+        # Segment the text into sections
+        text_sections = extract_sections(text)
+
+        # Find the annotations for each text_section
+        annotated_text_sections = find_annotations_per_section(text_sections, annotations)
+
+        return annotated_text_sections
