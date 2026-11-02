@@ -14,7 +14,7 @@ predictions_path = sys.argv[1]
 
 # Load MIMIC and annotations
 _, mimic_test = load_mimic(path_to_mimic_data=BASE_DIR)
-df_test = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv'))
+df_test = pd.read_csv(os.path.join(BASE_DIR, 'mimic_data', 'test_annotations.csv'), dtype={'concept_id': 'Int64'})
 
 # Add span columns (not stored in CSV — derived from note text)
 spans = []
@@ -31,7 +31,7 @@ df_test['span'] = spans
 df_test['span_prep'] = span_preps
 
 # Load the predictions
-predictions = pd.read_csv(predictions_path)
+predictions = pd.read_csv(predictions_path, dtype={'concept_id': 'Int64'})
 predictions = predictions.rename(columns={'filename': 'note_id'})
 
 # Merge correct with predictions

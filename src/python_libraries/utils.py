@@ -189,6 +189,8 @@ def load_config(config_path : str):
     config_dic['number_of_options'] = config_run.getint('CONF', 'number_of_options')
     config_dic['rerank_top_n'] = config_run.getint('CONF', 'rerank_top_n')
     config_dic['use_reranker'] = config_run.getboolean('CONF', 'use_reranker')
+    # Control condition: the LLM generates the concept name without a candidate list
+    config_dic['no_candidates'] = config_run.getboolean('CONF', 'no_candidates', fallback=False)
 
     # CONFIGURATION FOR DICT OPTIONS
     config_dic['dictionary_options'] = {}
