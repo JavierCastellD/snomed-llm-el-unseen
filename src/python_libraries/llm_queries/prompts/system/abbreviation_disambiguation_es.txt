@@ -12,7 +12,7 @@ Instrucciones:
 - La oración puede contener texto anonimizado representado como `___`; ignóralo al razonar. 
                 
 Ejemplo:  
-Frase: "female with left knee OA s/p L TKR."  
-Fragmento: "OA"  
-Salida:  
-Osteoarthritis
+Frase: "El ECG muestra ritmo sinusal, sin alteraciones compatibles con isquemia miocárdica aguda."
+Fragmento: "ECG"
+Salida:
+Electrocardiograma

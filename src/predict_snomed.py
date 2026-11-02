@@ -8,7 +8,7 @@ from sentence_transformers.cross_encoder import CrossEncoder
 
 from python_libraries.embedding_models.embedding_model import load_embeddings
 from python_libraries.embedding_models.sentencetransformer_EM import SentenceTransformerEM
-from python_libraries.entity_linker import EntityLinkerAdaptiveLLM
+from python_libraries.entity_linker import EntityLinkerAdaptiveLLM, EntityLinkerNoCandidatesLLM
 from python_libraries.annotated_datasets.MIMIC_IV_annotated_dataset import MIMIC_IV_dataset
 from python_libraries.llm_queries import LLMQueryHelperOpenAI, OllamaQueryHelper
 from python_libraries.reranker import Reranker
@@ -31,6 +31,7 @@ use_fsn = config_dic['use_fsn']
 number_of_options = config_dic['number_of_options']
 rerank_top_n = config_dic['rerank_top_n']
 use_reranker = config_dic['use_reranker']
+no_candidates = config_dic['no_candidates']
 
 # CONFIGURATION FOR DICT OPTIONS
 dictionary_options = config_dic['dictionary_options']
@@ -47,7 +48,11 @@ if use_reranker:
     _parts.append('rer')
 if disambiguate_abbreviations:
     _parts.append('abv')
-_parts += [str(rerank_top_n), str(number_of_options), _llm_name]
+if no_candidates:
+    # Control without candidate list: no retrieval options, reranker or top-n are involved
+    _parts = [p for p in _parts if p != 'rer'] + ['nocand', _llm_name]
+else:
+    _parts += [str(rerank_top_n), str(number_of_options), _llm_name]
 EXECUTION_NAME = '_'.join(_parts)
 
 # Files for the checkpoints
@@ -108,11 +113,10 @@ else:
                                             endpoint=config['AZURE']['endpoint_openai'],
                                             model_name=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE)
 
-# Load the CrossEncoder
-cross_encoder = CrossEncoder(os.path.join(BASE_DIR, 'cross-encoder', f'cef_{model_name}_{triplet_type}_en_snomed_sim_cand_200_epoch_1_bs_128'))
-
-# Create the Reranker
-reranker = Reranker(cross_encoder)
+# Load the CrossEncoder and create the Reranker (not needed for the control without candidates)
+if not no_candidates:
+    cross_encoder = CrossEncoder(os.path.join(BASE_DIR, 'cross-encoder', f'cef_{model_name}_{triplet_type}_en_snomed_sim_cand_200_epoch_1_bs_128'))
+    reranker = Reranker(cross_encoder)
 
 ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Clinical finding' : 'Clinical finding', 
@@ -127,10 +131,15 @@ ANNOTATIONS_CSV_PATH = os.path.join(BASE_DIR, 'data', 'df_snomed_ct_el_challenge
 mimic = MIMIC_IV_dataset(annotation_csv_path=ANNOTATIONS_CSV_PATH, notes_csv_path=NOTES_CSV_PATH)
 
 # Load the Entity Linker
-entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
-                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations,
-                                        rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
-                                        ner_type2hierarchy=ner_type2hierarchy)
+if no_candidates:
+    entity_linker = EntityLinkerNoCandidatesLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper,
+                                                disambiguate_abbreviations=disambiguate_abbreviations, replace_span=replace_span,
+                                                ner_type2hierarchy=ner_type2hierarchy)
+else:
+    entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
+                                            dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations,
+                                            rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
+                                            ner_type2hierarchy=ner_type2hierarchy)
 
 # Load the Snomed Pipe
 snomed_pipe = SnomedPipe(entity_linker)

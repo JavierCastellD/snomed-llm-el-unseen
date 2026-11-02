@@ -8,7 +8,7 @@ from sentence_transformers.cross_encoder import CrossEncoder
 
 from python_libraries.embedding_models.embedding_model import load_embeddings
 from python_libraries.embedding_models.sentencetransformer_EM import SentenceTransformerEM
-from python_libraries.entity_linker import EntityLinkerAdaptiveLLM
+from python_libraries.entity_linker import EntityLinkerAdaptiveLLM, EntityLinkerNoCandidatesLLM
 from python_libraries.annotated_datasets.TEMIST_dataset import TEMIST_dataset
 from python_libraries.llm_queries import LLMQueryHelperOpenAI, OllamaQueryHelper
 from python_libraries.reranker import Reranker
@@ -36,6 +36,7 @@ use_fsn = config_dic['use_fsn']
 number_of_options = config_dic['number_of_options']
 rerank_top_n = config_dic['rerank_top_n']
 use_reranker = config_dic['use_reranker']
+no_candidates = config_dic['no_candidates']
 
 # CONFIGURATION FOR DICT OPTIONS
 dictionary_options = config_dic['dictionary_options']
@@ -54,7 +55,11 @@ if use_reranker:
     _parts.append('rer')
 if disambiguate_abbreviations:
     _parts.append('abv')
-_parts += [str(rerank_top_n), str(number_of_options), _llm_name]
+if no_candidates:
+    # Control without candidate list: no retrieval options, reranker or top-n are involved
+    _parts = [p for p in _parts if p != 'rer'] + ['nocand', _llm_name]
+else:
+    _parts += [str(rerank_top_n), str(number_of_options), _llm_name]
 EXECUTION_NAME = '_'.join(_parts)
 
 # Files for the checkpoints
@@ -106,11 +111,10 @@ else:
                                             endpoint=config['AZURE']['endpoint_openai'],
                                             model_name=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE)
 
-# Load the CrossEncoder
-cross_encoder = CrossEncoder(CROSS_ENCODER)
-
-# Create the Reranker
-reranker = Reranker(cross_encoder)
+# Load the CrossEncoder and create the Reranker (not needed for the control without candidates)
+if not no_candidates:
+    cross_encoder = CrossEncoder(CROSS_ENCODER)
+    reranker = Reranker(cross_encoder)
 
 ner_type2hierarchy = {'Body structure' : 'Body structure',
                       'Clinical finding' : 'Clinical finding', 
@@ -131,10 +135,15 @@ temist = TEMIST_dataset(notes_folder_path=NOTES_FOLDER_PATH, annotations_tsv_pat
                         ignore_combined=True, ignore_no_code=True)
 
 # Load the Entity Linker
-entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
-                                        dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations,
-                                        rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
-                                        ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
+if no_candidates:
+    entity_linker = EntityLinkerNoCandidatesLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper,
+                                                disambiguate_abbreviations=disambiguate_abbreviations, replace_span=replace_span,
+                                                ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
+else:
+    entity_linker = EntityLinkerAdaptiveLLM(snomed=snomed, snomed_embedder=snomed_embedder, llm_query=llm_query_helper, reranker=reranker,
+                                            dictionary_options=dictionary_options, disambiguate_abbreviations=disambiguate_abbreviations,
+                                            rephrase=rephrase, replace_span=replace_span, use_fsn=use_fsn, number_of_options=number_of_options, rerank_top_n=rerank_top_n,
+                                            ner_type2hierarchy=ner_type2hierarchy, spanish_version=True)
 
 # Load the Snomed Pipe
 snomed_pipe = SnomedPipe(entity_linker)

@@ -24,10 +24,17 @@ def get_hash(*values : str):
     return hashlib.md5(combined_string.encode('utf-8')).hexdigest()
 
 # PROMPT FILES
-ENTITY_LINKING_SYS_ES = "prompts/system/entity_linking_es.txt"
-ENTITY_LINKING_USER_ES = "prompts/user/entity_linking_es.txt"
-ENTITY_LINKING_SYS_EN = "prompts/system/entity_linking_en.txt"
-ENTITY_LINKING_USER_EN = "prompts/user/entity_linking_en.txt"
+PROMPT_VARIANT = os.environ.get("EL_PROMPT_VARIANT", "")   # "" or "nocontext_"
+
+ENTITY_LINKING_SYS_ES = f"prompts/system/entity_linking_{PROMPT_VARIANT}es.txt"
+ENTITY_LINKING_USER_ES = f"prompts/user/entity_linking_{PROMPT_VARIANT}es.txt"
+ENTITY_LINKING_SYS_EN = f"prompts/system/entity_linking_{PROMPT_VARIANT}en.txt"
+ENTITY_LINKING_USER_EN = f"prompts/user/entity_linking_{PROMPT_VARIANT}en.txt"
+
+ENTITY_LINKING_NOCANDIDATES_SYS_ES = "prompts/system/entity_linking_nocandidates_es.txt"
+ENTITY_LINKING_NOCANDIDATES_USER_ES = "prompts/user/entity_linking_nocandidates_es.txt"
+ENTITY_LINKING_NOCANDIDATES_SYS_EN = "prompts/system/entity_linking_nocandidates_en.txt"
+ENTITY_LINKING_NOCANDIDATES_USER_EN = "prompts/user/entity_linking_nocandidates_en.txt"
 
 ABBREVIATION_DISAMBIGUATION_SYS_ES = "prompts/system/abbreviation_disambiguation_es.txt"
 ABBREVIATION_DISAMBIGUATION_USER_ES = "prompts/user/abbreviation_disambiguation_es.txt"
@@ -91,7 +98,9 @@ class LLMQueryHelper(ABC):
                     'RP' : {},
                     'SYN' : {},
                     'AB_SP' : {},
-                    'EL_SP' : {}
+                    'EL_SP' : {},
+                    'EL_NC' : {},
+                    'EL_NC_SP' : {}
                     }
     
         # We load each cache file
@@ -481,6 +490,126 @@ class LLMQueryHelper(ABC):
                     "model" : f"{self.model_name}"
                 }
         
+        return payload
+
+    def send_request_EL_NC(self, sentence : str, span : str, section : str, return_response : bool = False) -> str | None:
+        """Creates the query for entity linking without a candidate list, i.e., the LLM generates the name of the
+        SNOMED CT concept, and returns the response message. If return_response is set to True, returns the response object
+        from the request. The type of the response object might vary depending on the implementation of _send_request.
+
+        Parameters:
+            sentence (str):
+                Sentence that provides context for the entity linking.
+            span (str):
+                String detected as an entity.
+            section (str):
+                String that denotes the section where the sentence is found.
+            return_response (bool):
+                Whether to return the response object or just a string with the message.
+
+        Returns:
+            A string with the message from the response or the response object from the request. If there is an error, None is returned instead.
+        """
+        payload = self.create_EL_NC_payload(sentence=sentence, span=span, section=section)
+        hash = get_hash(sentence, span, section, str(return_response), str(payload['messages']))
+
+        if hash in self.cache["EL_NC"]:
+            response = self.cache["EL_NC"][hash]
+        else:
+            response = self._send_request(payload, return_response)
+
+            self.cache["EL_NC"][hash] = response
+
+        return response
+
+    def send_request_EL_NC_es(self, sentence : str, span : str, return_response : bool = False) -> str | None:
+        """Creates the query for entity linking without a candidate list in Spanish, i.e., the LLM generates the name of the
+        SNOMED CT concept, and returns the response message. If return_response is set to True, returns the response object
+        from the request. The type of the response object might vary depending on the implementation of _send_request.
+
+        Parameters:
+            sentence (str):
+                Sentence that provides context for the entity linking.
+            span (str):
+                String detected as an entity.
+            return_response (bool):
+                Whether to return the response object or just a string with the message.
+
+        Returns:
+            A string with the message from the response or the response object from the request. If there is an error, None is returned instead.
+        """
+        payload = self.create_EL_NC_es_payload(sentence=sentence, span=span)
+        hash = get_hash(sentence, span, str(return_response), str(payload['messages']))
+
+        if hash in self.cache["EL_NC_SP"]:
+            response = self.cache["EL_NC_SP"][hash]
+        else:
+            response = self._send_request(payload, return_response)
+
+            self.cache["EL_NC_SP"][hash] = response
+
+        return response
+
+    def create_EL_NC_payload(self, sentence : str, span : str, section : str) -> dict[str]:
+        """Creates the payload to be sent for the entity linking request without a candidate list.
+
+        Parameters:
+            sentence (str):
+                Sentence that provides context for the entity linking.
+            span (str):
+                String detected as an entity.
+            section (str):
+                String that denotes the section where the sentence is found.
+        Returns:
+            A dictionary that contains the payload for the request.
+        """
+        system_prompt = load_prompt(ENTITY_LINKING_NOCANDIDATES_SYS_EN)
+        user_prompt = load_prompt(ENTITY_LINKING_NOCANDIDATES_USER_EN)
+        payload = {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt.format(sentence=sentence, span=span, section=section)
+                        }
+                    ],
+                    "temperature": self.temperature,
+                    "model" : f"{self.model_name}"
+                }
+
+        return payload
+
+    def create_EL_NC_es_payload(self, sentence : str, span : str) -> dict[str]:
+        """Creates the payload to be sent for the entity linking request without a candidate list in Spanish.
+
+        Parameters:
+            sentence (str):
+                Sentence that provides context for the entity linking.
+            span (str):
+                String detected as an entity.
+        Returns:
+            A dictionary that contains the payload for the request.
+        """
+        system_prompt = load_prompt(ENTITY_LINKING_NOCANDIDATES_SYS_ES)
+        user_prompt = load_prompt(ENTITY_LINKING_NOCANDIDATES_USER_ES)
+        payload = {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt.format(sentence=sentence, span=span)
+                        }
+                    ],
+                    "temperature": self.temperature,
+                    "model" : f"{self.model_name}"
+                }
+
         return payload
 
     def save_cache(self):

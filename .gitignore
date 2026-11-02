@@ -1,6 +1,6 @@
 *.ipynb
 *.sh
-el_checkpoints/
+el_checkpoints*/
 src/config_files/config_run_old.cfg
 __pycache__/
 src/evaluate_all.py
